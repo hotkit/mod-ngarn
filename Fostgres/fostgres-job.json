@@ -1,0 +1,3 @@
+// PUT -> Insert new job
+// GET -> Get job details
+// DELETE -> cancel job
