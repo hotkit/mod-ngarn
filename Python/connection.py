@@ -1,8 +1,10 @@
-import asyncio
 import asyncpg
+import os
 
 async def get_connection():
-    return await asyncpg.connect(user='tle', password='',
-                                 database='mod-ngarn-test', host='127.0.0.1')
-    # values = await conn.fetch('''SELECT * FROM mytable''')
-    # await conn.close()
+    PGDBNAME = os.getenv('PGDBNAME')
+    PGHOST = os.getenv('PGHOST')
+    PGPASSWORD = os.getenv('PGPASSWORD')
+    PGUSER = os.getenv('PGUSER')
+    return await asyncpg.connect(user=PGUSER, password=PGPASSWORD,
+        database=PGDBNAME, host=PGHOST)
