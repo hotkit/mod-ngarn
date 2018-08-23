@@ -25,9 +25,7 @@ CREATE TABLE modngarn_job (
     priority INTEGER DEFAULT 0,
     created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     scheduled TIMESTAMP WITH TIME ZONE,
-    started TIMESTAMP WITH TIME ZONE,
     executed TIMESTAMP WITH TIME ZONE,
-    cancelled TIMESTAMP WITH TIME ZONE,
     result JSON,
     PRIMARY KEY (id)
 );
