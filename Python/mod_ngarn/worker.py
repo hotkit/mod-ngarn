@@ -1,8 +1,13 @@
 import asyncio
+import logging
+import sys
 
 import asyncpg
 
 from mod_ngarn.connection import get_connection
+
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+log = logging.getLogger('mod_ngarn')
 
 
 async def fetch_job(cnx: asyncpg.Connection):
@@ -58,8 +63,13 @@ async def run():
     cnx = await get_connection()
     async with cnx.transaction():
         job = await fetch_job(cnx)
-        result = await execute(job)
-        await record_result(cnx, job, result)
+        if job:
+            log.debug(f"Processing job_id: {job['id']}")
+            result = await execute(job)
+            await record_result(cnx, job, result)
+        else:
+            log.debug(f"No job left...")
+
 
 def run_worker():
     loop = asyncio.get_event_loop()
