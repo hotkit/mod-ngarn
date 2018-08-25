@@ -9,7 +9,7 @@ setup(
     author_email='info@proteus-tech.com',
     url='https://proteus-tech.com/',
     scripts=[],
-    packages=['worker'],
+    packages=[],
     package_dir={'': 'Python'},
     install_requires=['asyncpg'],
     data_files=[
