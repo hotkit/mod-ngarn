@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup(
-    name='mod-ngarn',
+    name='mod_ngarn',
     version='0.0.1',
     description='Simple async worker jobs',
     author='Proteus Tech',
