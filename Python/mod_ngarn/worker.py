@@ -50,7 +50,7 @@ async def execute(job: asyncpg.Record):
     if asyncio.iscoroutinefunction(func):
         return await func(*job['args'], **job['kwargs'])
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, func, *job['args'], **job['kwargs'])
+    return await loop.run_in_executor(None, func, job['args'], job['kwargs'])
 
 
 async def record_result(cnx: asyncpg.Connection, job: asyncpg.Record, result: dict ={}):
@@ -69,12 +69,8 @@ async def run():
             start_time = time.time()
             result = await execute(job)
             processed_time = time.time() - start_time
-            if not result:
-                result = {'process_time': processed_time}
-            else:
-                result = {**result, **{'process_time': processed_time}}
             log.info(' Processed#{} in {}s'.format(job['id'], processed_time))
-            await record_result(cnx, job, result)
+            await record_result(cnx, job, {'process_time': processed_time, 'result': result})
         else:
             log.info(f"No job left...")
 
