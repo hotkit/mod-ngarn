@@ -4,3 +4,4 @@ pyre
 pytest==3.6.3
 pytest-asyncio==0.9.0
 pytest-cov==2.5.1
+pytest-icdiff==0.0.3
