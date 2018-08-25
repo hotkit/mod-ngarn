@@ -1,6 +1,7 @@
-from worker import run
 import pytest
-from connection import get_connection
+
+from mod_ngarn.connection import get_connection
+from mod_ngarn.worker import run
 
 
 @pytest.mark.asyncio

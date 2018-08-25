@@ -1,5 +1,7 @@
-from worker import import_fn
 import pytest
+
+from mod_ngarn.worker import import_fn
+
 
 # TEST functions
 async def async_ret(text):

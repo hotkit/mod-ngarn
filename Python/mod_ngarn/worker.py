@@ -1,6 +1,8 @@
 import asyncio
+
 import asyncpg
-from connection import get_connection
+
+from mod_ngarn.connection import get_connection
 
 
 async def fetch_job(cnx: asyncpg.Connection):

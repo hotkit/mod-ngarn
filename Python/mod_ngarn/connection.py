@@ -1,6 +1,8 @@
-import asyncpg
-import os
 import json
+import os
+
+import asyncpg
+
 
 async def get_connection():
     PGDBNAME = os.getenv('PGDBNAME')

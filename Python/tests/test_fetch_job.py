@@ -1,6 +1,7 @@
-from worker import fetch_job
 import pytest
-from connection import get_connection
+
+from mod_ngarn.connection import get_connection
+from mod_ngarn.worker import fetch_job
 
 
 @pytest.mark.asyncio
@@ -86,4 +87,3 @@ async def test_fetch_job_should_be_fetch_only_not_claimed_job():
     await cnx.close()
     await cnx1.close()
     await cnx2.close()
-
