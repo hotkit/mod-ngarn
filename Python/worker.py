@@ -59,7 +59,9 @@ async def run():
         result = await execute(job)
         await record_result(cnx, job, result)
 
-
-if __name__ == '__main__':
+def run_worker():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run())
+
+if __name__ == '__main__':
+    run_worker()
