@@ -1,12 +1,13 @@
 import asyncio
 import logging
 import sys
+import time
 
 import asyncpg
 
 from mod_ngarn.connection import get_connection
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger('mod_ngarn')
 
 
@@ -64,11 +65,18 @@ async def run():
     async with cnx.transaction():
         job = await fetch_job(cnx)
         if job:
-            log.debug(f"Processing job_id: {job['id']}")
+            log.info("Processing#{}".format(job['id']))
+            start_time = time.time()
             result = await execute(job)
+            processed_time = time.time() - start_time
+            if not result:
+                result = {'process_time': processed_time}
+            else:
+                result = {**result, **{'process_time': processed_time}}
+            log.info(' Processed#{} in {}s'.format(job['id'], processed_time))
             await record_result(cnx, job, result)
         else:
-            log.debug(f"No job left...")
+            log.info(f"No job left...")
 
 
 def run_worker():
