@@ -1,10 +1,10 @@
-from worker import fetch_jobs
+from worker import fetch_job
 import pytest
 from connection import get_connection
 
 
 @pytest.mark.asyncio
-async def test_fetch_jobs_should_be_able_to_fetch_not_processed_jobs():
+async def test_fetch_job_should_be_able_to_fetch_not_processed_job():
     cnx = await get_connection()
     insert_query = """
         INSERT INTO modngarn_job (id, fn_name, args, kwargs, scheduled, executed) 
@@ -14,15 +14,14 @@ async def test_fetch_jobs_should_be_able_to_fetch_not_processed_jobs():
             ('job-3', 'asycio.sleep', '[2]', '{}', NULL, NULL);
     """
     await cnx.execute(insert_query)
-    jobs = await fetch_jobs(cnx)
-    assert len(jobs) == 1
-    assert jobs[0]['id'] == 'job-3'
+    job = await fetch_job(cnx)
+    assert job['id'] == 'job-3'
     await cnx.execute('TRUNCATE TABLE modngarn_job;')
     await cnx.close()
 
 
 @pytest.mark.asyncio
-async def test_fetch_jobs_should_be_able_to_fetch_correct_scheduled_jobs():
+async def test_fetch_job_should_be_able_to_fetch_correct_scheduled_job():
     cnx = await get_connection()
     insert_query = """
         INSERT INTO modngarn_job (id, fn_name, args, kwargs, scheduled, executed) 
@@ -31,15 +30,14 @@ async def test_fetch_jobs_should_be_able_to_fetch_correct_scheduled_jobs():
             ('job-2', 'asycio.sleep', '[2]', '{}', NOW() - INTERVAL '10 minutes', NULL);
     """
     await cnx.execute(insert_query)
-    jobs = await fetch_jobs(cnx)
-    assert len(jobs) == 1
-    assert jobs[0]['id'] == 'job-2'
+    job = await fetch_job(cnx)
+    assert job['id'] == 'job-2'
     await cnx.execute('TRUNCATE TABLE modngarn_job;')
     await cnx.close()
 
 
 @pytest.mark.asyncio
-async def test_fetch_jobs_should_be_able_to_fetch_correct_priorities():
+async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
     cnx = await get_connection()
     insert_query = """
         INSERT INTO modngarn_job (id, fn_name, args, priority) 
@@ -49,10 +47,43 @@ async def test_fetch_jobs_should_be_able_to_fetch_correct_priorities():
             ('job-3', 'asycio.sleep', '[2]', 1);
     """
     await cnx.execute(insert_query)
-    jobs = await fetch_jobs(cnx)
-    assert len(jobs) == 3
-    assert jobs[0]['id'] == 'job-3'
-    assert jobs[1]['id'] == 'job-2'
-    assert jobs[2]['id'] == 'job-1'
+    job = await fetch_job(cnx)
+    assert job['id'] == 'job-3'
     await cnx.execute('TRUNCATE TABLE modngarn_job;')
     await cnx.close()
+
+
+@pytest.mark.asyncio
+async def test_fetch_job_should_be_fetch_only_not_claimed_job():
+    insert_query = """
+        INSERT INTO modngarn_job (id, fn_name, args, priority) 
+        VALUES 
+            ('job-1', 'asycio.sleep', '[2]', 10),
+            ('job-2', 'asycio.sleep', '[2]', 2),
+            ('job-3', 'asycio.sleep', '[2]', 1);
+    """
+    cnx = await get_connection()
+    await cnx.execute(insert_query)
+
+    # First worker fetch_job
+    cnx1 = await get_connection()
+    tx1 = cnx1.transaction()
+    await tx1.start()
+    job1 = await fetch_job(cnx1)
+    
+
+    # Second worker fetch_job
+    cnx2 = await get_connection()
+    tx2 = cnx2.transaction()
+    await tx2.start()
+    job2 = await fetch_job(cnx2)
+    
+    assert job1['id'] == 'job-3'
+    assert job2['id'] == 'job-2'
+    await tx1.commit()
+    await tx2.commit()
+    await cnx.execute('TRUNCATE TABLE modngarn_job;')
+    await cnx.close()
+    await cnx1.close()
+    await cnx2.close()
+

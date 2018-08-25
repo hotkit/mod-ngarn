@@ -1,15 +1,18 @@
 import asyncio
 import asyncpg
+from connection import get_connection
 
 
-async def fetch_jobs(cnx: asyncpg.Connection, limit:int=10):
-    return await cnx.fetch("""
+async def fetch_job(cnx: asyncpg.Connection):
+    return await cnx.fetchrow("""
         SELECT id, fn_name, args, kwargs
         FROM modngarn_job 
         WHERE executed IS NULL
-          AND (scheduled IS NULL OR scheduled < NOW())
-        ORDER BY priority LIMIT $1;
-    """, limit)
+            AND (scheduled IS NULL OR scheduled < NOW())
+        ORDER BY priority 
+        FOR UPDATE SKIP LOCKED
+        LIMIT 1
+    """)
 
 
 async def import_fn(function_name: str):
@@ -33,23 +36,30 @@ async def import_fn(function_name: str):
         return globals()['__builtins__'][function_name]
 
 
-async def execute(cnx: asyncpg.Connection, job: asyncpg.Record):
+async def execute(job: asyncpg.Record):
     """ Execute the transaction """
     func = await import_fn(job['fn_name'])
     if asyncio.iscoroutinefunction(func):
-        result = await func(*job['args'], **job['kwargs'])
-    else:
-        result = await loop.run_in_executor(None, func, *job['args'], **job['kwargs'])
-    await record_result(cnx, job['id'], result)
+        return await func(*job['args'], **job['kwargs'])
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, func, *job['args'], **job['kwargs'])
 
 
-async def record_result(cnx: asyncpg.Connection, job_id: str, result: dict ={}):
+async def record_result(cnx: asyncpg.Connection, job: asyncpg.Record, result: dict ={}):
     """ Record result to database, does not commit the transaction """
-    cnx.execute("""
+    return await cnx.execute("""
         UPDATE modngarn_job SET result=$1, executed=NOW() WHERE id=$2
-    """, result, job_id)
+    """, result, job['id'])
 
 
-async def main(cnx: asyncpg.Connection, loop):
-    for job in await fetch_jobs(cnx, limit=10):
-        await execute(cnx, job)
+async def run():
+    cnx = await get_connection()
+    async with cnx.transaction():
+        job = await fetch_job(cnx)
+        result = await execute(job)
+        await record_result(cnx, job, result)
+
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run())

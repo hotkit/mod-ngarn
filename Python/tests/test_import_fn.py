@@ -31,3 +31,8 @@ async def test_import_fn_can_import_async_fn():
     r = await import_fn("tests.test_import_fn.async_ret")
     res = await r('Hello')
     assert res == "Hello"
+
+@pytest.mark.asyncio
+async def test_import_fn_should_raise_key_error_when_cannot_import():
+    with pytest.raises(KeyError):
+        await import_fn("very_random.fn")
