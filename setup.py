@@ -9,7 +9,10 @@ setup(
     author_email='info@proteus-tech.com',
     url='https://proteus-tech.com/',
     scripts=[],
-    packages=[],
+    packages=['worker'],
+    package_dir={'': 'Python'}
     install_requires=['asyncpg'],
-    data_files=[]
+    data_files=[
+        ('share/mod-ngarn/Schema', ['Schema'])
+    ]
 )
