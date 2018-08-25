@@ -1,3 +1,4 @@
+BEGIN;
 -- Create Table: modngarn_migration
 CREATE TABLE modngarn_migration (
     migration text NOT NULL,
@@ -31,3 +32,4 @@ CREATE TABLE modngarn_job (
 );
 
 INSERT INTO modngarn_migration VALUES ('001-initial.blue.sql');
+COMMIT;
