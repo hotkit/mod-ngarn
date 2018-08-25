@@ -1,0 +1,32 @@
+{
+    "webserver": {
+        "views/mod-ngarn/job": {
+            "view": "fostgres.sql",
+            "configuration": {
+                "sql": [
+                    {
+                        "return": "object",
+                        "path": [1],
+                        "GET": {
+                            "command": "SELECT * FROM public.modngarn_job WHERE id=$1",
+                            "arguments": [1]
+                        },
+                        "PUT": {
+                            "table": "public.modngarn_job",
+                            "columns": {
+                                "id": {
+                                    "key": true,
+                                    "source": 1
+                                },
+                                "fn_name": {},
+                                "args": {},
+                                "kwargs": {},
+                                "priority": {}
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}
