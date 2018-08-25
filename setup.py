@@ -13,6 +13,6 @@ setup(
     package_dir={'': 'Python'},
     install_requires=['asyncpg'],
     data_files=[
-        ('share/mod-ngarn/Schema', ['Schema'])
+        ('share/mod-ngarn/Schema', ['Schema/001-initial.blue.sql'])
     ]
 )
