@@ -11,16 +11,17 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s -
 log = logging.getLogger('mod_ngarn')
 
 
-async def fetch_job(cnx: asyncpg.Connection):
+async def fetch_job(cnx: asyncpg.Connection, try_limit=10):
     return await cnx.fetchrow("""
         SELECT id, fn_name, args, kwargs
         FROM modngarn_job 
         WHERE executed IS NULL
             AND (scheduled IS NULL OR scheduled < NOW())
+            AND priority <= $1
         ORDER BY priority 
         FOR UPDATE SKIP LOCKED
         LIMIT 1
-    """)
+    """, try_limit)
 
 
 async def import_fn(function_name: str):
