@@ -72,7 +72,6 @@ async def run():
     async with cnx.transaction():
         job = await fetch_job(cnx)
         if job:
-            log.info("Processing#{}".format(job['id']))
             try:
                 start_time = time.time()
                 result = await execute(job)
@@ -82,7 +81,7 @@ async def run():
                 await record_result(cnx, job, {'process_time': processed_time, 'result': result})
             # TODO: More specific Exception
             except Exception as e:
-                log.error(e)
+                log.error('Error#{}, {}'.format(job['id'], e))
                 log.error(traceback.print_exc())
                 await record_result(cnx, job, error=True)
                 
