@@ -45,13 +45,13 @@ async def import_fn(function_name: str):
         return globals()['__builtins__'][function_name]
 
 
-async def execute(cnx: asyncpg.Connection, job: asyncpg.Record):
+async def execute(job: asyncpg.Record):
     """ Execute the transaction """
     func = await import_fn(job['fn_name'])
     if asyncio.iscoroutinefunction(func):
-        return await func(cnx, *job['args'], **job['kwargs'])
+        return await func(*job['args'], **job['kwargs'])
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, func, cnx, *job['args'], **job['kwargs'])
+    return await loop.run_in_executor(None, func, *job['args'], **job['kwargs'])
 
 
 async def record_result(cnx: asyncpg.Connection, job: asyncpg.Record, result: dict ={}, error: bool=False):
@@ -73,7 +73,7 @@ async def run():
             log.info("Processing#{}".format(job['id']))
             try:
                 start_time = time.time()
-                result = await execute(cnx, job)
+                result = await execute(job)
                 processed_time = time.time() - start_time
                 log.info(' Processed#{} in {}s'.format(job['id'], processed_time))
                 await record_result(cnx, job, {'process_time': processed_time, 'result': result})
