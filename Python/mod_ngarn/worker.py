@@ -2,6 +2,7 @@ import asyncio
 import logging
 import sys
 import time
+import traceback
 
 import asyncpg
 
@@ -79,7 +80,8 @@ async def run():
                 await record_result(cnx, job, {'process_time': processed_time, 'result': result})
             # TODO: More specific Exception
             except Exception as e:
-                log.error(str(e))
+                log.error(e)
+                log.error(traceback.print_exc())
                 await record_result(cnx, job, error=True)
                 
     await cnx.close()
