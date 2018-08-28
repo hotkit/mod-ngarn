@@ -81,7 +81,7 @@ async def run():
                 log(str(e))
                 await record_result(cnx, job, error=True)
                 
-    cnx.close()
+    await cnx.close()
 
 
 def run_worker():
