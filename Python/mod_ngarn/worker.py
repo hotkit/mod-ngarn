@@ -78,7 +78,7 @@ async def run():
                 await record_result(cnx, job, {'process_time': processed_time, 'result': result})
             # TODO: More specific Exception
             except Exception as e:
-                log(str(e))
+                log.error(str(e))
                 await record_result(cnx, job, error=True)
                 
     await cnx.close()
