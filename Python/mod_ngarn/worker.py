@@ -77,7 +77,7 @@ async def run():
                 start_time = time.time()
                 result = await execute(job)
                 processed_time = '{}s'.format(
-                    Decimal(str(time.time() - start_time)).quantize(Decimal('.001'), rounding=ROUND_DOWN))
+                    Decimal(str(time.time() - start_time)).quantize(Decimal('.001')))
                 log.info('Processed#{}  in {}'.format(job['id'], processed_time))
                 await record_result(cnx, job, {'process_time': processed_time, 'result': result})
             # TODO: More specific Exception
