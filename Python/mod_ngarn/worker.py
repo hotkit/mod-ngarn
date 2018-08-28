@@ -4,6 +4,7 @@ import logging
 import sys
 import time
 import traceback
+from decimal import Decimal
 
 import asyncpg
 
