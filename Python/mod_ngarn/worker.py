@@ -44,21 +44,25 @@ async def import_fn(function_name: str):
         return globals()['__builtins__'][function_name]
 
 
-async def execute(job: asyncpg.Record):
+async def execute(cnx: asyncpg.Connection, job: asyncpg.Record):
     """ Execute the transaction """
     func = await import_fn(job['fn_name'])
     if asyncio.iscoroutinefunction(func):
-        return await func(*job['args'], **job['kwargs'])
+        return await func(cnx, *job['args'], **job['kwargs'])
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, func, job['args'], job['kwargs'])
+    return await loop.run_in_executor(None, func, cnx, *job['args'], **job['kwargs'])
 
 
-async def record_result(cnx: asyncpg.Connection, job: asyncpg.Record, result: dict ={}):
+async def record_result(cnx: asyncpg.Connection, job: asyncpg.Record, result: dict ={}, error: bool=False):
     """ Record result to database, does not commit the transaction """
-    return await cnx.execute("""
-        UPDATE modngarn_job SET result=$1, executed=NOW() WHERE id=$2
-    """, result, job['id'])
-
+    if not error:
+        return await cnx.execute("""
+            UPDATE modngarn_job SET result=$1, executed=NOW() WHERE id=$2
+        """, result, job['id'])
+    else:
+        return await cnx.execute("""
+            UPDATE modngarn_job SET priority=priority+1 WHERE id=$1
+        """, job['id'])
 
 async def run():
     cnx = await get_connection()
@@ -66,13 +70,18 @@ async def run():
         job = await fetch_job(cnx)
         if job:
             log.info("Processing#{}".format(job['id']))
-            start_time = time.time()
-            result = await execute(job)
-            processed_time = time.time() - start_time
-            log.info(' Processed#{} in {}s'.format(job['id'], processed_time))
-            await record_result(cnx, job, {'process_time': processed_time, 'result': result})
-        else:
-            log.info(f"No job left...")
+            try:
+                start_time = time.time()
+                result = await execute(cnx, job)
+                processed_time = time.time() - start_time
+                log.info(' Processed#{} in {}s'.format(job['id'], processed_time))
+                await record_result(cnx, job, {'process_time': processed_time, 'result': result})
+            # TODO: More specific Exception
+            except Exception as e:
+                log(str(e))
+                await record_result(cnx, job, error=True)
+                
+    cnx.close()
 
 
 def run_worker():
