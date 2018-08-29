@@ -27,7 +27,10 @@ CREATE TABLE modngarn_job (
     created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     scheduled TIMESTAMP WITH TIME ZONE,
     executed TIMESTAMP WITH TIME ZONE,
+    canceled TIMESTAMP WITH TIME ZONE,
     result JSONB,
+    reason TEXT,
+    processed_time TEXT,
     PRIMARY KEY (id)
 );
 
