@@ -74,7 +74,7 @@ async def record_failed_result(cnx: asyncpg.Connection, job: asyncpg.Record, err
         """, job['id'], error)
     return await cnx.execute("""
         UPDATE modngarn_job SET priority=priority+1 WHERE id=$1
-    """, job['id'], error)
+    """, job['id'])
 
 async def run():
     cnx = await get_connection()
