@@ -68,7 +68,7 @@ async def record_success_result(cnx: asyncpg.Connection, job: asyncpg.Record, pr
 
 async def record_failed_result(cnx: asyncpg.Connection, job: asyncpg.Record, error: str):
     """ Record result to database, does not commit the transaction """
-    if job['priority'] > LIMIT:    
+    if job['priority'] == LIMIT:    
         return await cnx.execute("""
             UPDATE modngarn_job SET priority=priority+1, reason=$2, canceled=NOW() WHERE id=$1
         """, job['id'], error)
