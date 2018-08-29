@@ -18,7 +18,7 @@ LIMIT = os.getenv('LIMIT', 10)
 
 async def fetch_job(cnx: asyncpg.Connection):
     return await cnx.fetchrow("""
-        SELECT id, fn_name, args, kwargs
+        SELECT id, fn_name, args, kwargs, priority
         FROM modngarn_job 
         WHERE executed IS NULL
             AND (scheduled IS NULL OR scheduled < NOW())
@@ -92,7 +92,6 @@ async def run():
                 log.error('Error#{}, {}'.format(job['id'], e.__repr__()))
                 log.error(traceback.print_exc())
                 await record_failed_result(cnx, job, e.__repr__())
-                
     await cnx.close()
 
 
