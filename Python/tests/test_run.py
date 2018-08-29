@@ -10,9 +10,9 @@ async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
     insert_query = """
         INSERT INTO modngarn_job (id, fn_name, args, priority) 
         VALUES 
-            ('job-1', 'asyncio.sleep', '[1]', 10),
+            ('job-1', 'print', '[1]', 10),
             ('job-2', 'print', '["Hello"]', 2),
-            ('job-3', 'asyncio.sleep', '[1]', 1);
+            ('job-3', 'print', '[1]', 1);
     """
     await cnx.execute(insert_query)
     assert await cnx.fetchval('SELECT COUNT(*) FROM modngarn_job WHERE executed IS NULL') == 3
@@ -32,9 +32,9 @@ async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
     insert_query = """
         INSERT INTO modngarn_job (id, fn_name, args, priority) 
         VALUES 
-            ('job-1', 'asyncio.sleep', '[1]', 10),
+            ('job-1', 'print', '[1]', 10),
             ('job-2', 'print', '["Hello"]', 2),
-            ('job-3', 'asyncio.sleep', '[1]', 1);
+            ('job-3', 'print', '[1]', 1);
     """
     await cnx.execute(insert_query)
     assert await cnx.fetchval('SELECT COUNT(*) FROM modngarn_job WHERE executed IS NULL') == 3
