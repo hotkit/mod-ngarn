@@ -21,15 +21,16 @@ $body$ LANGUAGE plpgsql;
 CREATE TABLE modngarn_job (
     id TEXT NOT NULL CHECK (url_safe(id)),
     fn_name TEXT NOT NULL,
-    args JSON DEFAULT '[]',
-    kwargs JSON DEFAULT '{}',
+    args JSONB DEFAULT '[]',
+    kwargs JSONB DEFAULT '{}',
     priority INTEGER DEFAULT 0,
     created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     scheduled TIMESTAMP WITH TIME ZONE,
     executed TIMESTAMP WITH TIME ZONE,
-    result JSON,
+    result JSONB,
     PRIMARY KEY (id)
 );
+
 
 INSERT INTO modngarn_migration VALUES ('001-initial.blue.sql');
 COMMIT;
