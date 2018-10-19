@@ -1,8 +1,26 @@
 # mod-ngarn
-ModNgarn – Simple worker async job
+ModNgarn – Simple job workers
 
-# Dev setup
-- Install virtualenv
-- `pip install -r requirements.txt`
-- `export PGDBNAME=<db_name> PGHOST=<db_host> PGPASSWORD=<db_password> PGUSER=<db_user>`
-- `./runtests.sh`
+## Usage
+### Installation
+```
+pip install mod-ngarn
+psql -d $PGDATABASE -f /usr/local/share/mod-ngarn/Schema/001-initial.blue.sql
+```
+
+## Dev
+### Required
+- pipenv (https://github.com/pypa/pipenv)
+- running PostgreSQL (`psql` should work)
+- python 3.7
+
+#### Setup
+```
+pipenv install --python 3.7
+pipenv shell
+```
+
+#### Runtests
+```
+./runtests.sh
+```
