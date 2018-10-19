@@ -24,3 +24,8 @@ pipenv shell
 ```
 ./runtests.sh
 ```
+
+#### Publish to PyPi
+```
+flit publish
+```
