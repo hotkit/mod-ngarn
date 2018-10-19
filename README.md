@@ -5,8 +5,19 @@ ModNgarn – Simple job workers
 ### Installation
 ```
 pip install mod-ngarn
-psql -d $PGDATABASE -f /usr/local/share/mod-ngarn/Schema/001-initial.blue.sql
 ```
+
+### Migrate
+- Include mod-ngarn schema to SCHEMA_PATH
+```
+SCHEMA_PATH=$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/mod-ngarn/Schema
+```
+- Run migrate
+```
+tormor -d $PGDBNAME include $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/mod-ngarn/Schema/migrations.txt
+```
+For more infomation, please check our [Tormor documentation](https://github.com/Proteus-tech/tormor)
+
 
 ## Dev
 ### Required

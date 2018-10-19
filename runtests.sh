@@ -8,7 +8,7 @@ PGDBNAME="test_mod_ngarn"
 dropdb -U postgres $PGDBNAME || echo "$PGDBNAME hasn't created before"
 createdb -U postgres $PGDBNAME
 
-psql -d $PGDBNAME -f ./Schema/001-initial.blue.sql
+SCHEMA_PATH=./mod_ngarn/Schema tormor -d $PGDBNAME include ./mod_ngarn/Schema/migrations.txt
 
-pyre --source-directory . --search-path "$(pipenv --venv)/lib/python3.7/site-packages/" check
+pyre --source-directory . --search-path "$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")" check
 PGDBNAME=$PGDBNAME pytest -v --cov-report term-missing --cov=. --cov-config .coveragerc $*
