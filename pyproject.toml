@@ -1,0 +1,26 @@
+[build-system]
+requires = ["flit"]
+build-backend = "flit.buildapi"
+
+[tool.flit.metadata]
+module = "mod_ngarn"
+author = "Tle Ekkul"
+author-email = "e.aryuth@gmail.com"
+home-page = "https://github.com/Proteus-tech/mod-ngarn"
+classifiers = ["License :: OSI Approved :: MIT License"]
+description-file = "README.md"
+requires = [
+    "asyncpg==0.17.0"
+]
+requires-python = "~=3.6"
+
+[tool.flit.metadata.requires-extra]
+test = [
+    "coverage==4.5.1",
+    "pyre-check==0.0.16",
+    "pytest==3.6.3",
+    "pytest-asyncio==0.9.0",
+    "pytest-cov==2.5.1",
+    "pytest-icdiff==0.0.3",
+    "get_version==2.0.3"
+]
