@@ -3,8 +3,8 @@ from distutils.core import setup
 
 setup(
     name='mod_ngarn',
-    version='0.0.1',
-    description='Simple async worker jobs',
+    version='0.1',
+    description='Simple async worker',
     author='Proteus Tech',
     author_email='info@proteus-tech.com',
     url='https://proteus-tech.com/',

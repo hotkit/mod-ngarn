@@ -1,0 +1,11 @@
+[build-system]
+requires = ["flit"]
+build-backend = "flit.buildapi"
+
+[tool.flit.metadata]
+module = "mod_ngarn"
+author = "Tle Ekkul"
+author-email = "e.aryuth@gmail.com"
+home-page = "https://github.com/Proteus-tech/mod-ngarn"
+classifiers = ["License :: OSI Approved :: MIT License"]
+
