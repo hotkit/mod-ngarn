@@ -26,7 +26,7 @@ SCHEMA_PATH=$(python -c "from distutils.sysconfig import get_python_lib; print(g
 ```
 tormor -d $PGDBNAME include $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/mod-ngarn/Schema/migrations.txt
 ```
-For more infomation, please check our [Tormor documentation](https://github.com/Proteus-tech/tormor)
+For more information, please check out [Tormor documentation](https://github.com/Proteus-tech/tormor)
 
 
 ## Dev
