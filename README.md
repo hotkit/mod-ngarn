@@ -2,12 +2,22 @@
 ModNgarn – Simple job workers
 
 ## Usage
-### Installation
+```
+Usage: mod-ngarn [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  run
+```
+
+## Installation
 ```
 pip install mod-ngarn
 ```
 
-### Migrate
+## Migrate
 - Include mod-ngarn schema to SCHEMA_PATH
 ```
 SCHEMA_PATH=$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/mod-ngarn/Schema
