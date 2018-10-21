@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 asyncpg = "==0.17.0"
 tormor = "==1.1"
+click = "*"
 
 [dev-packages]
 pylint = "*"

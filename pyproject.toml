@@ -11,7 +11,8 @@ classifiers = ["License :: OSI Approved :: MIT License"]
 description-file = "README.md"
 requires = [
     "asyncpg==0.17.0",
-    "tormor==1.1"
+    "tormor==1.1",
+    "Click==7.0"
 ]
 requires-python = "~=3.6"
 
@@ -25,3 +26,6 @@ test = [
     "pytest-icdiff==0.0.3",
     "freezegun==0.3.11"
 ]
+
+[tool.flit.scripts]
+mod-ngarn = "mod_ngarn:script"
