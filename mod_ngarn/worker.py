@@ -4,14 +4,16 @@ import logging
 import sys
 import time
 import traceback
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-import os
-from typing import Dict, Callable, Any, List
-import asyncpg
-from dataclasses import dataclass, field
-from .utils import import_fn
+from typing import Any, Callable, Dict, List
 
+import asyncpg
 from mod_ngarn.connection import get_connection
+
+from dataclasses import dataclass, field
+
+from .utils import import_fn
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -61,8 +63,13 @@ class Job:
 
     async def failed(self, error: str) -> str:
         """ Failed execution handler """
+        delay = 2 ** self.priority
+        next_schedule = datetime.now(timezone.utc) + timedelta(seconds=delay)
         return await self.cnx.execute(
-            "UPDATE modngarn_job SET priority=priority+1, reason=$2  WHERE id=$1", self.id, error
+            "UPDATE modngarn_job SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1",
+            self.id,
+            error,
+            next_schedule,
         )
 
 
