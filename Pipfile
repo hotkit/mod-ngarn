@@ -14,8 +14,10 @@ pytest-icdiff = "==0.0.3"
 get-version = "==2.0.3"
 flit = "*"
 tormor = "==1.1"
+black = "*"
 
 [dev-packages]
+pylint = "*"
 
 [requires]
 python_version = "3.7"
