@@ -1,0 +1,25 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+asyncpg = "==0.17.0"
+tormor = "==1.1"
+click = "*"
+
+[dev-packages]
+pylint = "*"
+ipdb = "*"
+flit = "*"
+black = "*"
+coverage = "==4.5.1"
+pyre-check = "==0.0.16"
+pytest = "==3.6.3"
+pytest-asyncio = "==0.9.0"
+pytest-cov = "==2.5.1"
+pytest-icdiff = "==0.0.3"
+freezegun = "*"
+
+[requires]
+python_version = "3.7"
