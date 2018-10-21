@@ -1,6 +1,6 @@
 """Simple async worker"""
 
-__version__ = ""
+__version__ = "2.0"
 
 import click
 import asyncio
