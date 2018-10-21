@@ -17,7 +17,6 @@ Commands:
 pip install mod-ngarn
 ```
 
-## Migrate
 - Include mod-ngarn schema to SCHEMA_PATH
 ```
 SCHEMA_PATH=$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/mod-ngarn/Schema
