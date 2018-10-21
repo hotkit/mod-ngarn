@@ -10,5 +10,5 @@ createdb -U postgres $PGDBNAME
 
 SCHEMA_PATH=./mod_ngarn/Schema tormor -d $PGDBNAME include ./mod_ngarn/Schema/migrations.txt
 
-pyre --source-directory . --search-path "$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")" check
+pyre --source-directory ./mod_ngarn --search-path "$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")" check
 PGDBNAME=$PGDBNAME pytest -v --cov-report term-missing --cov=. --cov-config .coveragerc $*

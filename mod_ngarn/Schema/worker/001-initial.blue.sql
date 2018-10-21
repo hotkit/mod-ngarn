@@ -1,10 +1,4 @@
 BEGIN;
--- Create Table: modngarn_migration
-CREATE TABLE modngarn_migration (
-    migration text NOT NULL,
-    PRIMARY KEY (migration)
-);
-
 
 CREATE FUNCTION url_safe(str text) RETURNS boolean AS $body$
     BEGIN
@@ -37,5 +31,4 @@ CREATE TABLE modngarn_job (
 CREATE INDEX idx_kwargs ON modngarn_job USING gin (kwargs);
 CREATE INDEX idx_pending_jobs ON modngarn_job (executed) WHERE executed IS NULL;
 
-INSERT INTO modngarn_migration VALUES ('001-initial.blue.sql');
 COMMIT;

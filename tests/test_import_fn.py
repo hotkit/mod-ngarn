@@ -1,11 +1,12 @@
 import pytest
 
-from mod_ngarn.worker import import_fn
+from mod_ngarn.utils import import_fn, ImportNotFoundException
 
 
 # TEST functions
 async def async_ret(text):
     import asyncio
+
     await asyncio.sleep(1)
     return text
 
@@ -17,7 +18,7 @@ def sync_ret(text):
 @pytest.mark.asyncio
 async def test_import_fn_can_import_builtin_fn():
     s = await import_fn("sum")
-    res = s([1,2,3])
+    res = s([1, 2, 3])
     assert res == 6
 
 
@@ -34,7 +35,8 @@ async def test_import_fn_can_import_async_fn():
     res = await r('Hello')
     assert res == "Hello"
 
+
 @pytest.mark.asyncio
 async def test_import_fn_should_raise_key_error_when_cannot_import():
-    with pytest.raises(KeyError):
+    with pytest.raises(ImportNotFoundException):
         await import_fn("very_random.fn")
