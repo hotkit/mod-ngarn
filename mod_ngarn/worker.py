@@ -18,7 +18,7 @@ from .utils import import_fn
 logging.basicConfig(
     stream=sys.stdout,
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format="[%(asctime)s] - %(name)s - %(levelname)s - %(message)s",
 )
 log = logging.getLogger("mod_ngarn")
 
@@ -49,7 +49,6 @@ class Job:
             return result
         except Exception as e:
             log.error("Error#{}, {}".format(self.id, e.__repr__()))
-            log.error(traceback.print_exc())
             await self.failed(e.__repr__())
 
     async def success(self, result: Dict, processing_time: Decimal) -> str:
@@ -65,6 +64,9 @@ class Job:
         """ Failed execution handler """
         delay = 2 ** self.priority
         next_schedule = datetime.now(timezone.utc) + timedelta(seconds=delay)
+        log.error(
+            'Rescheduled, delay for {} seconds ({}) '.format(delay, next_schedule.isoformat())
+        )
         return await self.cnx.execute(
             "UPDATE modngarn_job SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1",
             self.id,
@@ -88,14 +90,17 @@ class JobRunner:
             LIMIT 1
         """
         )
-        return Job(
-            cnx,
-            result["id"],
-            result["fn_name"],
-            result["priority"],
-            result["args"],
-            result["kwargs"],
-        )
+        if result:
+            return Job(
+                cnx,
+                result["id"],
+                result["fn_name"],
+                result["priority"],
+                result["args"],
+                result["kwargs"],
+            )
+        else:
+            log.info('404 Job not found')
 
     async def run(self):
         cnx = await get_connection()
