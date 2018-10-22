@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE FUNCTION url_safe(str text) RETURNS boolean AS $body$
+CREATE FUNCTION modngarn_url_safe(str text) RETURNS boolean AS $body$
     BEGIN
         --- Disallow back slash, forward slash, fraction slash (2044),
         --- division slash (2215), reverse solidus operator (29f5),
@@ -13,7 +13,7 @@ $body$ LANGUAGE plpgsql;
 
 
 CREATE TABLE modngarn_job (
-    id TEXT NOT NULL CHECK (url_safe(id)),
+    id TEXT NOT NULL CHECK (modngarn_url_safe(id)),
     fn_name TEXT NOT NULL,
     args JSONB DEFAULT '[]',
     kwargs JSONB DEFAULT '{}',

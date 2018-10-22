@@ -1,3 +1,6 @@
+2018-10-22  Tle Ekkul  <e.aryuth@gmail.com>
+ Make url_safe function name more unique
+
 2018-10-21  Tle Ekkul  <e.aryuth@gmail.com>
  Rewrite mod-ngarn 1.0
  Added `mod-ngarn run` script
