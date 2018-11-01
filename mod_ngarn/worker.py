@@ -9,10 +9,10 @@ from decimal import Decimal
 from typing import Any, Callable, Dict, List
 
 import asyncpg
-from mod_ngarn.connection import get_connection
 
 from dataclasses import dataclass, field
 
+from .connection import get_connection
 from .utils import import_fn
 
 logging.basicConfig(
