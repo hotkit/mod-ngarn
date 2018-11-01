@@ -9,10 +9,10 @@ from decimal import Decimal
 from typing import Any, Callable, Dict, List
 
 import asyncpg
-from mod_ngarn.connection import get_connection
 
 from dataclasses import dataclass, field
 
+from .connection import get_connection
 from .utils import import_fn
 
 logging.basicConfig(
@@ -99,13 +99,13 @@ class JobRunner:
                 result["args"],
                 result["kwargs"],
             )
-        else:
-            log.info('404 Job not found')
 
     async def run(self):
         cnx = await get_connection()
         async with cnx.transaction():
             job = await self.fetch_job(cnx)
             if job:
-                await job.execute()
+                log.info(f'Executing: {job.id}')
+                result = await job.execute()
+                log.info(f'Executed: {result}')
         await cnx.close()
