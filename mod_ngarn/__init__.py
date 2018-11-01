@@ -2,10 +2,14 @@
 
 __version__ = "2.1"
 
-import click
 import asyncio
+
+import click
+
 from .worker import JobRunner
 
+global script
+global run
 
 @click.group()
 def script():
