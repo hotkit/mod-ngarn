@@ -1,8 +1,27 @@
-from typing import Callable
+from typing import Callable, Union
+from inspect import getmembers, getmodule, ismethod
 
 
 class ImportNotFoundException(Exception):
     pass
+
+
+class ModuleNotfoundException(Exception):
+    pass
+
+
+async def get_fn_name(func: Union[str, Callable]) -> str:
+    try:
+        if isinstance(func, str):
+            return func
+        if ismethod(func):
+            module_name = get_fn_name(dict(getmembers(func))['__self__'])
+        else:
+            module_name = getmodule(func).__name__
+        name = func.__name__
+        return '.'.join([module_name, name])
+    except AttributeError as e:
+        raise ModuleNotfoundException(e)
 
 
 async def import_fn(fn_name) -> Callable:
