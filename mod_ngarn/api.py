@@ -1,31 +1,25 @@
-import asyncio
-import functools
-import logging
-import sys
-import time
-import traceback
-from datetime import datetime, timedelta, timezone
-from decimal import Decimal
-from typing import Any, Callable, Dict, List
+from datetime import datetime
+from typing import Callable, Optional, Union
 
 import asyncpg
 
-from dataclasses import dataclass, field
-from .utils import import_fn
+from .utils import get_fn_name
 
 
 async def add_job(
     cnx: asyncpg.Connection,
     job_id: str,
-    fn_name: str,
-    schedule_time: datetime =None,
-    args: list =[],
+    func: Union[str, Callable],
+    schedule_time: Optional[datetime] = None,
+    priority: int = 0,
+    args: list = [],
     kwargs: dict ={}
-):
-    await cnx.execute(
+) -> asyncpg.Record:
+    fn_name = await get_fn_name(func)
+    return await cnx.fetchrow(
         """
-        INSERT INTO public.modngarn_job (id, fn_name, scheduled, args, kwargs)
-        VALUES ($1,  $2, $3, $4, $5) RETURNING *;
+        INSERT INTO public.modngarn_job (id, fn_name, priority, scheduled, args, kwargs)
+        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
         """,
-        job_id, fn_name, schedule_time, args, kwargs
+        job_id, fn_name, priority, schedule_time, args, kwargs
     )
