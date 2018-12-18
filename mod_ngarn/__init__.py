@@ -1,6 +1,6 @@
 """Simple async worker"""
 
-__version__ = "2.1"
+__version__ = "2.3"
 
 import asyncio
 
@@ -10,6 +10,7 @@ from .worker import JobRunner
 
 global script
 global run
+
 
 @click.group()
 def script():
