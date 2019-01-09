@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import logging
+import os
 import sys
 import time
 import traceback
@@ -13,7 +14,7 @@ import asyncpg
 from dataclasses import dataclass, field
 
 from .connection import get_connection
-from .utils import import_fn
+from .utils import escape_table_name, import_fn
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -31,6 +32,7 @@ class Job:
     priority: int
     args: List[Any] = field(default_factory=list)
     kwargs: Dict = field(default_factory=dict)
+    table: str = escape_table_name(os.getenv('DBTABLE', 'modngarn_job'))
 
     async def execute(self) -> Any:
         """ Execute the transaction """
@@ -54,7 +56,7 @@ class Job:
     async def success(self, result: Dict, processing_time: Decimal) -> str:
         """ Success execution handler """
         return await self.cnx.execute(
-            "UPDATE modngarn_job SET result=$1, executed=NOW(), processed_time=$2 WHERE id=$3",
+            f"UPDATE {self.table} SET result=$1, executed=NOW(), processed_time=$2 WHERE id=$3",
             result,
             processing_time,
             self.id,
@@ -68,7 +70,7 @@ class Job:
             'Rescheduled, delay for {} seconds ({}) '.format(delay, next_schedule.isoformat())
         )
         return await self.cnx.execute(
-            "UPDATE modngarn_job SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1",
+            f"UPDATE {self.table} SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1",
             self.id,
             error,
             next_schedule,
@@ -77,19 +79,23 @@ class Job:
 
 @dataclass
 class JobRunner:
-    async def fetch_job(self, cnx: asyncpg.Connection):
+    async def fetch_job(
+        self,
+        cnx: asyncpg.Connection,
+        table: str = escape_table_name(os.getenv('DBTABLE', 'modngarn_job')),
+    ):
+
         result = await cnx.fetchrow(
-            """
-            SELECT id, fn_name, args, kwargs, priority
-            FROM modngarn_job 
+            f"""SELECT id, fn_name, args, kwargs, priority FROM {table}
             WHERE executed IS NULL
-                AND (scheduled IS NULL OR scheduled < NOW())
-                AND canceled IS NULL
-            ORDER BY priority 
+            AND (scheduled IS NULL OR scheduled < NOW())
+            AND canceled IS NULL
+            ORDER BY priority
             FOR UPDATE SKIP LOCKED
             LIMIT 1
         """
         )
+
         if result:
             return Job(
                 cnx,
@@ -100,10 +106,10 @@ class JobRunner:
                 result["kwargs"],
             )
 
-    async def run(self):
+    async def run(self, table: str = escape_table_name(os.getenv('DBTABLE', 'modngarn_job'))):
         cnx = await get_connection()
         async with cnx.transaction():
-            job = await self.fetch_job(cnx)
+            job = await self.fetch_job(cnx, table)
             if job:
                 log.info(f'Executing: {job.id}')
                 result = await job.execute()
