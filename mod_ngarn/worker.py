@@ -86,7 +86,7 @@ class JobRunner:
     ):
 
         result = await cnx.fetchrow(
-            f"""SELECT id, fn_name, args, kwargs, priority FROM {table}
+            f"""SELECT id, fn_name, args, kwargs, priority FROM "{table}"
             WHERE executed IS NULL
             AND (scheduled IS NULL OR scheduled < NOW())
             AND canceled IS NULL

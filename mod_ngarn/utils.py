@@ -59,17 +59,17 @@ async def setup_table(table: str = escape_table_name(os.getenv('DBTABLE', 'modng
     cnx = await get_connection()
     async with cnx.transaction():
         await cnx.execute(
-            """CREATE TABLE IF NOT EXISTS {table} (
+            """CREATE TABLE IF NOT EXISTS "{table}" (
                     id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
                     fn_name TEXT NOT NULL,
-                    args JSONB DEFAULT '[]',
-                    kwargs JSONB DEFAULT '{{}}',
+                    args JSON DEFAULT '[]',
+                    kwargs JSON DEFAULT '{{}}',
                     priority INTEGER DEFAULT 0,
                     created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                     scheduled TIMESTAMP WITH TIME ZONE,
                     executed TIMESTAMP WITH TIME ZONE,
                     canceled TIMESTAMP WITH TIME ZONE,
-                    result JSONB,
+                    result JSON,
                     reason TEXT,
                     processed_time TEXT,
                     PRIMARY KEY (id)
@@ -80,8 +80,5 @@ async def setup_table(table: str = escape_table_name(os.getenv('DBTABLE', 'modng
         )
 
         await cnx.execute(
-            f"""CREATE INDEX IF NOT EXISTS idx_kwargs ON {table} USING gin (kwargs);"""
-        )
-        await cnx.execute(
-            f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON {table} (executed) WHERE executed IS NULL;"""
+            f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON "{table}" (executed) WHERE executed IS NULL;"""
         )

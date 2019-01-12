@@ -54,7 +54,7 @@ async def test_job_success_record_to_db():
     table = os.getenv('DBTABLE', 'modngarn_job')
     await cnx.execute(
         """
-    INSERT INTO {table} (id, fn_name, args) VALUES ('job-1', 'tests.test_job.async_dummy_job', '["hello"]')
+    INSERT INTO "{table}" (id, fn_name, args) VALUES ('job-1', 'tests.test_job.async_dummy_job', '["hello"]')
     """.format(
             table=table
         )
@@ -62,9 +62,9 @@ async def test_job_success_record_to_db():
     job = Job(cnx, 'job-1', 'tests.test_job.async_dummy_job', 0, ['hello'], {})
     result = await job.execute()
     assert result == 'hello'
-    job = await cnx.fetchrow(f"SELECT * FROM {table} WHERE id=$1", 'job-1')
+    job = await cnx.fetchrow(f'SELECT * FROM "{table}" WHERE id=$1', 'job-1')
     assert job['result'] == 'hello'
-    await cnx.execute(f'TRUNCATE TABLE {table};')
+    await cnx.execute(f'TRUNCATE TABLE "{table}";')
     await cnx.close()
 
 
@@ -74,24 +74,24 @@ async def test_job_failed_record_to_db():
     table = os.getenv('DBTABLE', 'modngarn_job')
     await cnx.execute(
         """
-    INSERT INTO {table} (id, fn_name, args) VALUES ('job-2', 'tests.test_job.raise_dummy_job', '["hello"]')
+    INSERT INTO "{table}" (id, fn_name, args) VALUES ('job-2', 'tests.test_job.raise_dummy_job', '["hello"]')
     """.format(
             table=table
         )
     )
     job = Job(cnx, 'job-2', 'tests.test_job.raise_dummy_job', 0)
     await job.execute()
-    job_db = await cnx.fetchrow(f"SELECT * FROM {table} WHERE id=$1", 'job-2')
+    job_db = await cnx.fetchrow(f'SELECT * FROM "{table}" WHERE id=$1', 'job-2')
     assert job_db['result'] == None
     assert job_db['priority'] == 1
     assert job_db['reason'] == 'KeyError()'
 
     await job.execute()
-    job_db = await cnx.fetchrow(f"SELECT * FROM {table} WHERE id=$1", 'job-2')
+    job_db = await cnx.fetchrow(f'SELECT * FROM "{table}" WHERE id=$1', 'job-2')
     assert job_db['result'] == None
     assert job_db['priority'] == 2
     assert job_db['reason'] == 'KeyError()'
-    await cnx.execute(f'TRUNCATE TABLE {table};')
+    await cnx.execute(f'TRUNCATE TABLE "{table}";')
     await cnx.close()
 
 
@@ -102,7 +102,7 @@ async def test_job_failed_exponential_delay_job_based_on_priority():
     table = os.getenv('DBTABLE', 'modngarn_job')
     await cnx.execute(
         """
-    INSERT INTO {table} (id, fn_name, args) VALUES ('job-2', 'tests.test_job.raise_dummy_job', '["hello"]')
+    INSERT INTO "{table}" (id, fn_name, args) VALUES ('job-2', 'tests.test_job.raise_dummy_job', '["hello"]')
     """.format(
             table=table
         )
@@ -110,31 +110,31 @@ async def test_job_failed_exponential_delay_job_based_on_priority():
     job = Job(cnx, 'job-2', 'tests.test_job.raise_dummy_job', 0)
     # First failed, should delay 1 sec
     await job.execute()
-    job_db = await cnx.fetchrow(f"SELECT * FROM {table} WHERE id=$1", 'job-2')
+    job_db = await cnx.fetchrow(f'SELECT * FROM "{table}" WHERE id=$1', 'job-2')
     assert job_db['priority'] == 1
     assert job_db['scheduled'].isoformat() == '2018-01-01T12:00:01+00:00'
 
     # Second failed, should delay 2 sec
     job.priority = job_db['priority']
     await job.execute()
-    job_db = await cnx.fetchrow(f"SELECT * FROM {table} WHERE id=$1", 'job-2')
+    job_db = await cnx.fetchrow(f'SELECT * FROM "{table}" WHERE id=$1', 'job-2')
     assert job_db['priority'] == 2
     assert job_db['scheduled'].isoformat() == '2018-01-01T12:00:02+00:00'
 
     # Third failed, should delay 4 sec
     job.priority = job_db['priority']
     await job.execute()
-    job_db = await cnx.fetchrow(f"SELECT * FROM {table} WHERE id=$1", 'job-2')
+    job_db = await cnx.fetchrow(f'SELECT * FROM "{table}" WHERE id=$1', 'job-2')
     assert job_db['priority'] == 3
     assert job_db['scheduled'].isoformat() == '2018-01-01T12:00:04+00:00'
 
     # 10th failed, should delay 1024 sec
     job.priority = 10
     await job.execute()
-    job_db = await cnx.fetchrow(f"SELECT * FROM {table} WHERE id=$1", 'job-2')
+    job_db = await cnx.fetchrow(f'SELECT * FROM "{table}" WHERE id=$1', 'job-2')
     assert job_db['scheduled'].isoformat() == '2018-01-01T12:17:04+00:00'
 
-    await cnx.execute(f'TRUNCATE TABLE {table};')
+    await cnx.execute(f'TRUNCATE TABLE "{table}";')
     await cnx.close()
 
 
@@ -144,14 +144,14 @@ async def test_job_runner_success_process():
     table = os.getenv('DBTABLE', 'modngarn_job')
     await cnx.execute(
         """
-    INSERT INTO {table} (id, fn_name, args) VALUES ('job-1', 'tests.test_job.async_dummy_job', '["hello"]')
+    INSERT INTO "{table}" (id, fn_name, args) VALUES ('job-1', 'tests.test_job.async_dummy_job', '["hello"]')
     """.format(
             table=table
         )
     )
     job_runner = JobRunner()
     await job_runner.run()
-    job = await cnx.fetchrow(f"SELECT * FROM {table} WHERE id=$1", 'job-1')
+    job = await cnx.fetchrow(f'SELECT * FROM "{table}" WHERE id=$1', 'job-1')
     assert job['result'] == 'hello'
-    await cnx.execute(f'TRUNCATE TABLE {table};')
+    await cnx.execute(f'TRUNCATE TABLE "{table}";')
     await cnx.close()

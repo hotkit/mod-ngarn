@@ -11,7 +11,7 @@ async def test_fetch_job_should_be_able_to_fetch_not_processed_job():
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     insert_query = """
-        INSERT INTO {table} (id, fn_name, args, kwargs, scheduled, executed) 
+        INSERT INTO "{table}" (id, fn_name, args, kwargs, scheduled, executed) 
         VALUES 
             ('job-1', 'asycio.sleep', '[2]', '{{}}', NULL, '2018-08-10'),
             ('job-2', 'asycio.sleep', '[2]', '{{}}', NULL, '2018-08-13'),
@@ -23,7 +23,7 @@ async def test_fetch_job_should_be_able_to_fetch_not_processed_job():
     job_runner = JobRunner()
     job = await job_runner.fetch_job(cnx)
     assert job.id == 'job-3'
-    await cnx.execute(f'TRUNCATE TABLE {table};')
+    await cnx.execute(f'TRUNCATE TABLE "{table}";')
     await cnx.close()
 
 
@@ -32,7 +32,7 @@ async def test_fetch_job_should_be_able_to_fetch_correct_scheduled_job():
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     insert_query = """
-        INSERT INTO {table} (id, fn_name, args, kwargs, scheduled, executed) 
+        INSERT INTO "{table}" (id, fn_name, args, kwargs, scheduled, executed) 
         VALUES 
             ('job-1', 'asycio.sleep', '[2]', '{{}}', NOW() + INTERVAL '10 minutes', NULL),
             ('job-2', 'asycio.sleep', '[2]', '{{}}', NOW() - INTERVAL '10 minutes', NULL);
@@ -43,7 +43,7 @@ async def test_fetch_job_should_be_able_to_fetch_correct_scheduled_job():
     job_runner = JobRunner()
     job = await job_runner.fetch_job(cnx)
     assert job.id == 'job-2'
-    await cnx.execute(f'TRUNCATE TABLE {table};')
+    await cnx.execute(f'TRUNCATE TABLE "{table}";')
     await cnx.close()
 
 
@@ -52,7 +52,7 @@ async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     insert_query = """
-        INSERT INTO {table} (id, fn_name, args, priority) 
+        INSERT INTO "{table}" (id, fn_name, args, priority) 
         VALUES 
             ('job-1', 'asycio.sleep', '[2]', 10),
             ('job-2', 'asycio.sleep', '[2]', 2),
@@ -64,7 +64,7 @@ async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
     job_runner = JobRunner()
     job = await job_runner.fetch_job(cnx)
     assert job.id == 'job-3'
-    await cnx.execute(f'TRUNCATE TABLE {table};')
+    await cnx.execute(f'TRUNCATE TABLE "{table}";')
     await cnx.close()
 
 
@@ -72,7 +72,7 @@ async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
 async def test_fetch_job_should_be_fetch_only_not_claimed_job():
     table = os.getenv('DBTABLE', 'modngarn_job')
     insert_query = """
-        INSERT INTO {table} (id, fn_name, args, priority) 
+        INSERT INTO "{table}" (id, fn_name, args, priority) 
         VALUES 
             ('job-1', 'asycio.sleep', '[2]', 10),
             ('job-2', 'asycio.sleep', '[2]', 2),
@@ -100,7 +100,7 @@ async def test_fetch_job_should_be_fetch_only_not_claimed_job():
     assert job2.id == 'job-2'
     await tx1.commit()
     await tx2.commit()
-    await cnx.execute(f'TRUNCATE TABLE {table};')
+    await cnx.execute(f'TRUNCATE TABLE "{table}";')
     await cnx.close()
     await cnx1.close()
     await cnx2.close()

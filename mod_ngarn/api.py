@@ -20,7 +20,7 @@ async def add_job(
     fn_name = await get_fn_name(func)
     return await cnx.fetchrow(
         """
-        INSERT INTO {table} (id, fn_name, priority, scheduled, args, kwargs)
+        INSERT INTO "{table}" (id, fn_name, priority, scheduled, args, kwargs)
         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
         """.format(
             table=table
