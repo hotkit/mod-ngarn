@@ -30,7 +30,7 @@ def run():
 @click.command()
 @click.option(
     '--name',
-    help='ModNgarn table name.',
+    help='mod-ngarn table name.',
 )
 def create_table(name):
     asyncio.run(utils.create_table(name))

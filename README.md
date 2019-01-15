@@ -9,6 +9,7 @@ Options:
   --help  Show this message and exit.
 
 Commands:
+  create-table
   run
 ```
 
@@ -17,16 +18,14 @@ Commands:
 pip install mod-ngarn
 ```
 
-- Include mod-ngarn schema to SCHEMA_PATH
+## Create modngarn job table
 ```
-SCHEMA_PATH=$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/mod-ngarn/Schema
-```
-- Run migrate
-```
-tormor -d $PGDBNAME include $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/mod-ngarn/Schema/migrations.txt
-```
-For more information, please check out [Tormor documentation](https://github.com/Proteus-tech/tormor)
+Usage: mod-ngarn create-table [OPTIONS]
 
+Options:
+  --name TEXT  mod-ngarn table name.
+  --help       Show this message and exit.
+```
 
 ## Dev
 ### Required
