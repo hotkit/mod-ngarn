@@ -55,7 +55,10 @@ async def import_fn(fn_name) -> Callable:
         raise ImportNotFoundException(e)
 
 
-async def setup_table(table: str = escape_table_name(os.getenv('DBTABLE', 'modngarn_job'))):
+async def create_table(name: str=None):
+    if not name:
+        name = os.getenv('MOD_NGARN_TABLE', 'modngarn_job')
+    print(f"Creating table {name}...")
     cnx = await get_connection()
     async with cnx.transaction():
         await cnx.execute(
@@ -75,10 +78,11 @@ async def setup_table(table: str = escape_table_name(os.getenv('DBTABLE', 'modng
                     PRIMARY KEY (id)
                 );
             """.format(
-                table=table
+                table=escape_table_name(name)
             )
         )
 
         await cnx.execute(
-            f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON "{table}" (executed) WHERE executed IS NULL;"""
+            f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON "{name}" (executed) WHERE executed IS NULL;"""
         )
+    print(f"Done")

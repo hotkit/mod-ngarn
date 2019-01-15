@@ -2,13 +2,14 @@ import os
 from datetime import datetime, timezone
 
 import pytest
-
 from mod_ngarn.api import add_job
 from mod_ngarn.connection import get_connection
+from mod_ngarn.utils import create_table
 
 
 @pytest.mark.asyncio
 async def test_add_job_should_return_inserted_record():
+    await create_table()
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     job_id = 'job-1'
@@ -29,6 +30,7 @@ async def test_add_job_should_return_inserted_record():
 
 @pytest.mark.asyncio
 async def test_add_job_with_only_fn_name_should_store_empty_args_and_kwargs():
+    await create_table()
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     job_id = 'job-1'
@@ -49,6 +51,7 @@ async def test_add_job_with_only_fn_name_should_store_empty_args_and_kwargs():
 
 @pytest.mark.asyncio
 async def test_add_job_should_store_all_of_parameter_as_input():
+    await create_table()
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     job_id = 'job-1'
@@ -89,6 +92,7 @@ async def async_sum(first, second):
 
 @pytest.mark.asyncio
 async def test_add_job_should_convert_callable_to_string_function_name():
+    await create_table()
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     job_id = 'job-1'

@@ -56,7 +56,7 @@ class Job:
     async def success(self, result: Dict, processing_time: Decimal) -> str:
         """ Success execution handler """
         return await self.cnx.execute(
-            f"UPDATE {self.table} SET result=$1, executed=NOW(), processed_time=$2 WHERE id=$3",
+            f"UPDATE \"{self.table}\" SET result=$1, executed=NOW(), processed_time=$2 WHERE id=$3",
             result,
             processing_time,
             self.id,
@@ -70,7 +70,7 @@ class Job:
             'Rescheduled, delay for {} seconds ({}) '.format(delay, next_schedule.isoformat())
         )
         return await self.cnx.execute(
-            f"UPDATE {self.table} SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1",
+            f"UPDATE \"{self.table}\" SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1",
             self.id,
             error,
             next_schedule,

@@ -1,18 +1,19 @@
 import os
 
 import pytest
-
 from mod_ngarn.connection import get_connection
+from mod_ngarn.utils import create_table
 from mod_ngarn.worker import JobRunner
 
 
 @pytest.mark.asyncio
 async def test_fetch_job_should_be_able_to_fetch_not_processed_job():
+    await create_table()
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     insert_query = """
-        INSERT INTO "{table}" (id, fn_name, args, kwargs, scheduled, executed) 
-        VALUES 
+        INSERT INTO "{table}" (id, fn_name, args, kwargs, scheduled, executed)
+        VALUES
             ('job-1', 'asycio.sleep', '[2]', '{{}}', NULL, '2018-08-10'),
             ('job-2', 'asycio.sleep', '[2]', '{{}}', NULL, '2018-08-13'),
             ('job-3', 'asycio.sleep', '[2]', '{{}}', NULL, NULL);
@@ -29,11 +30,12 @@ async def test_fetch_job_should_be_able_to_fetch_not_processed_job():
 
 @pytest.mark.asyncio
 async def test_fetch_job_should_be_able_to_fetch_correct_scheduled_job():
+    await create_table()
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     insert_query = """
-        INSERT INTO "{table}" (id, fn_name, args, kwargs, scheduled, executed) 
-        VALUES 
+        INSERT INTO "{table}" (id, fn_name, args, kwargs, scheduled, executed)
+        VALUES
             ('job-1', 'asycio.sleep', '[2]', '{{}}', NOW() + INTERVAL '10 minutes', NULL),
             ('job-2', 'asycio.sleep', '[2]', '{{}}', NOW() - INTERVAL '10 minutes', NULL);
     """.format(
@@ -49,11 +51,12 @@ async def test_fetch_job_should_be_able_to_fetch_correct_scheduled_job():
 
 @pytest.mark.asyncio
 async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
+    await create_table()
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     insert_query = """
-        INSERT INTO "{table}" (id, fn_name, args, priority) 
-        VALUES 
+        INSERT INTO "{table}" (id, fn_name, args, priority)
+        VALUES
             ('job-1', 'asycio.sleep', '[2]', 10),
             ('job-2', 'asycio.sleep', '[2]', 2),
             ('job-3', 'asycio.sleep', '[2]', 1);
@@ -70,10 +73,11 @@ async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
 
 @pytest.mark.asyncio
 async def test_fetch_job_should_be_fetch_only_not_claimed_job():
+    await create_table()
     table = os.getenv('DBTABLE', 'modngarn_job')
     insert_query = """
-        INSERT INTO "{table}" (id, fn_name, args, priority) 
-        VALUES 
+        INSERT INTO "{table}" (id, fn_name, args, priority)
+        VALUES
             ('job-1', 'asycio.sleep', '[2]', 10),
             ('job-2', 'asycio.sleep', '[2]', 2),
             ('job-3', 'asycio.sleep', '[2]', 1);

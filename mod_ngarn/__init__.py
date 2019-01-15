@@ -3,12 +3,12 @@
 __version__ = "2.3"
 
 import asyncio
+import os
 
 import click
 
+from . import utils
 from .worker import JobRunner
-from .utils import setup_table, escape_table_name
-import os
 
 global script
 global run
@@ -29,13 +29,12 @@ def run():
 
 @click.command()
 @click.option(
-    '--table',
-    default=escape_table_name(os.getenv('DBTABLE', 'modngarn_job')),
-    help='Database table name.',
+    '--name',
+    help='ModNgarn table name.',
 )
-def init_table(table):
-    asyncio.run(setup_table(table))
+def create_table(name):
+    asyncio.run(utils.create_table(name))
 
 
 script.add_command(run)
-script.add_command(init_table)
+script.add_command(create_table)

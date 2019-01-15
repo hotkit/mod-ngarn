@@ -4,8 +4,8 @@ from unittest import TestCase
 
 import freezegun
 import pytest
-
 from mod_ngarn.connection import get_connection
+from mod_ngarn.utils import create_table
 from mod_ngarn.worker import Job, JobRunner
 
 
@@ -23,6 +23,7 @@ def raise_dummy_job():
 
 @pytest.mark.asyncio
 async def test_job_execute_builtin_success():
+    await create_table()
     cnx = await get_connection()
     job = Job(cnx, 'job-1', 'sum', 1, [[1, 2]], {})
     result = await job.execute()
@@ -32,6 +33,7 @@ async def test_job_execute_builtin_success():
 
 @pytest.mark.asyncio
 async def test_job_execute_sync_fn_success():
+    await create_table()
     cnx = await get_connection()
     job = Job(cnx, 'job-1', 'tests.test_job.sync_dummy_job', 1, ['hello'], {})
     result = await job.execute()
@@ -41,6 +43,7 @@ async def test_job_execute_sync_fn_success():
 
 @pytest.mark.asyncio
 async def test_job_execute_async_fn_success():
+    await create_table()
     cnx = await get_connection()
     job = Job(cnx, 'job-1', 'tests.test_job.async_dummy_job', 1, ['hello'], {})
     result = await job.execute()
@@ -50,6 +53,7 @@ async def test_job_execute_async_fn_success():
 
 @pytest.mark.asyncio
 async def test_job_success_record_to_db():
+    await create_table()
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     await cnx.execute(
@@ -70,6 +74,7 @@ async def test_job_success_record_to_db():
 
 @pytest.mark.asyncio
 async def test_job_failed_record_to_db():
+    await create_table()
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     await cnx.execute(
@@ -98,6 +103,7 @@ async def test_job_failed_record_to_db():
 @freezegun.freeze_time('2018-01-01T12:00:00+00:00')
 @pytest.mark.asyncio
 async def test_job_failed_exponential_delay_job_based_on_priority():
+    await create_table()
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     await cnx.execute(
@@ -140,6 +146,7 @@ async def test_job_failed_exponential_delay_job_based_on_priority():
 
 @pytest.mark.asyncio
 async def test_job_runner_success_process():
+    await create_table()
     cnx = await get_connection()
     table = os.getenv('DBTABLE', 'modngarn_job')
     await cnx.execute(
