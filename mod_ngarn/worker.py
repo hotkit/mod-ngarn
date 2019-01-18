@@ -106,9 +106,9 @@ class JobRunner:
                 result["kwargs"],
             )
 
-    async def run(self, table: str = escape_table_name(os.getenv('DBTABLE', 'modngarn_job'))):
+    async def run(self, table: str = escape_table_name(os.getenv('DBTABLE', 'modngarn_job')), limit=300):
         cnx = await get_connection()
-        async with cnx.transaction():
+        async with cnx.transaction(isolation='serializable'):
             job = await self.fetch_job(cnx, table)
             if job:
                 log.info(f'Executing: {job.id}')
