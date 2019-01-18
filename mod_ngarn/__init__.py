@@ -21,10 +21,12 @@ def script():
 
 
 @click.command()
-def run():
+@click.option('--name', help='mod-ngarn table name.')
+@click.option('--limit', default=300, help='Number of greetings.')
+def run(name, limit):
     job_runner = JobRunner()
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(job_runner.run())
+    loop.run_until_complete(job_runner.run(table=name, limit=limit))
 
 
 @click.command()

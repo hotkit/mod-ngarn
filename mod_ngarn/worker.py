@@ -107,10 +107,10 @@ class JobRunner:
             )
 
     async def run(
-        self, table: str = escape_table_name(os.getenv("DBTABLE", "modngarn_job")), limit=300
+        self, table: str = escape_table_name(os.getenv("DBTABLE", "modngarn_job")), limit: int = 300
     ):
         cnx = await get_connection()
-        log.info(f"Running mod-ngarn, limit {limit} jobs")
+        log.info(f"Running mod-ngarn, table name: {table}, limit: {limit} jobs")
         for job_number in range(1, limit + 1):
             async with cnx.transaction(isolation="serializable"):
                 job = await self.fetch_job(cnx, table)
