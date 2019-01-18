@@ -12,7 +12,7 @@ from .worker import JobRunner
 
 global script
 global run
-global init_table
+global create_table
 
 
 @click.group()
@@ -28,10 +28,7 @@ def run():
 
 
 @click.command()
-@click.option(
-    '--name',
-    help='mod-ngarn table name.',
-)
+@click.option('--name', help='mod-ngarn table name.')
 def create_table(name):
     asyncio.run(utils.create_table(name))
 

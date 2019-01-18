@@ -32,7 +32,7 @@ class Job:
     priority: int
     args: List[Any] = field(default_factory=list)
     kwargs: Dict = field(default_factory=dict)
-    table: str = escape_table_name(os.getenv('DBTABLE', 'modngarn_job'))
+    table: str = escape_table_name(os.getenv("DBTABLE", "modngarn_job"))
 
     async def execute(self) -> Any:
         """ Execute the transaction """
@@ -56,7 +56,7 @@ class Job:
     async def success(self, result: Dict, processing_time: Decimal) -> str:
         """ Success execution handler """
         return await self.cnx.execute(
-            f"UPDATE \"{self.table}\" SET result=$1, executed=NOW(), processed_time=$2 WHERE id=$3",
+            f'UPDATE "{self.table}" SET result=$1, executed=NOW(), processed_time=$2 WHERE id=$3',
             result,
             processing_time,
             self.id,
@@ -67,10 +67,10 @@ class Job:
         delay = 2 ** self.priority
         next_schedule = datetime.now(timezone.utc) + timedelta(seconds=delay)
         log.error(
-            'Rescheduled, delay for {} seconds ({}) '.format(delay, next_schedule.isoformat())
+            "Rescheduled, delay for {} seconds ({}) ".format(delay, next_schedule.isoformat())
         )
         return await self.cnx.execute(
-            f"UPDATE \"{self.table}\" SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1",
+            f'UPDATE "{self.table}" SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1',
             self.id,
             error,
             next_schedule,
@@ -82,7 +82,7 @@ class JobRunner:
     async def fetch_job(
         self,
         cnx: asyncpg.Connection,
-        table: str = escape_table_name(os.getenv('DBTABLE', 'modngarn_job')),
+        table: str = escape_table_name(os.getenv("DBTABLE", "modngarn_job")),
     ):
 
         result = await cnx.fetchrow(
@@ -106,12 +106,19 @@ class JobRunner:
                 result["kwargs"],
             )
 
-    async def run(self, table: str = escape_table_name(os.getenv('DBTABLE', 'modngarn_job')), limit=300):
+    async def run(
+        self, table: str = escape_table_name(os.getenv("DBTABLE", "modngarn_job")), limit=300
+    ):
         cnx = await get_connection()
-        async with cnx.transaction(isolation='serializable'):
-            job = await self.fetch_job(cnx, table)
-            if job:
-                log.info(f'Executing: {job.id}')
-                result = await job.execute()
-                log.info(f'Executed: {result}')
+        log.info(f"Running mod-ngarn, limit {limit} jobs")
+        for job_number in range(1, limit + 1):
+            async with cnx.transaction(isolation="serializable"):
+                job = await self.fetch_job(cnx, table)
+                if job:
+                    log.info(f"Executing#{job_number}: \t{job.id}")
+                    result = await job.execute()
+                    log.info(f"Executed#{job_number}: \t{result}")
+                else:
+                    log.info("No job left, exiting...")
+                    break
         await cnx.close()
