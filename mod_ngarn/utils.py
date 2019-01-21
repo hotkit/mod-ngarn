@@ -62,7 +62,7 @@ async def create_table(name: str=None):
     cnx = await get_connection()
     async with cnx.transaction():
         await cnx.execute(
-            """CREATE TABLE IF NOT EXISTS "{table}" (
+            """CREATE TABLE IF NOT EXISTS "{queue_table}" (
                     id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
                     fn_name TEXT NOT NULL,
                     args JSON DEFAULT '[]',
@@ -78,7 +78,7 @@ async def create_table(name: str=None):
                     PRIMARY KEY (id)
                 );
             """.format(
-                table=escape_table_name(name)
+                queue_table=escape_table_name(name)
             )
         )
 
