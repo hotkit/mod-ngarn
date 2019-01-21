@@ -27,12 +27,12 @@ log = logging.getLogger("mod_ngarn")
 @dataclass
 class Job:
     cnx: asyncpg.Connection
+    table: str
     id: str
     fn_name: str
     priority: int
     args: List[Any] = field(default_factory=list)
     kwargs: Dict = field(default_factory=dict)
-    table: str = escape_table_name(os.getenv("DBTABLE", "modngarn_job"))
 
     async def execute(self) -> Any:
         """ Execute the transaction """
@@ -82,11 +82,11 @@ class JobRunner:
     async def fetch_job(
         self,
         cnx: asyncpg.Connection,
-        table: str = escape_table_name(os.getenv("DBTABLE", "modngarn_job")),
+        queue_table: str
     ):
 
         result = await cnx.fetchrow(
-            f"""SELECT id, fn_name, args, kwargs, priority FROM "{table}"
+            f"""SELECT id, fn_name, args, kwargs, priority FROM "{queue_table}"
             WHERE executed IS NULL
             AND (scheduled IS NULL OR scheduled < NOW())
             AND canceled IS NULL
@@ -99,6 +99,7 @@ class JobRunner:
         if result:
             return Job(
                 cnx,
+                queue_table,
                 result["id"],
                 result["fn_name"],
                 result["priority"],
@@ -107,13 +108,13 @@ class JobRunner:
             )
 
     async def run(
-        self, table: str = escape_table_name(os.getenv("DBTABLE", "modngarn_job")), limit: int = 300
+        self, queue_table, limit: int = 300
     ):
         cnx = await get_connection()
-        log.info(f"Running mod-ngarn, table name: {table}, limit: {limit} jobs")
+        log.info(f"Running mod-ngarn, queue table name: {queue_table}, limit: {limit} jobs")
         for job_number in range(1, limit + 1):
             async with cnx.transaction(isolation="serializable"):
-                job = await self.fetch_job(cnx, table)
+                job = await self.fetch_job(cnx, queue_table)
                 if job:
                     log.info(f"Executing#{job_number}: \t{job.id}")
                     result = await job.execute()

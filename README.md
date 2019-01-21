@@ -18,13 +18,25 @@ Commands:
 pip install mod-ngarn
 ```
 
-## Create modngarn job table
+## Run modngarn
+```
+Usage: mod-ngarn run [OPTIONS]
+
+Options:
+  --queue-table TEXT  Queue table name (Default: os.getenv("DBTABLE",
+                      "modngarn_job"))
+  --limit INTEGER     Limit jobs (Default: 300)
+  --help              Show this message and exit.
+```
+
+## Create modngarn job queue table
 ```
 Usage: mod-ngarn create-table [OPTIONS]
 
 Options:
-  --name TEXT  mod-ngarn table name.
-  --help       Show this message and exit.
+  --queue-table TEXT  Queue table name (Default: os.getenv("DBTABLE",
+                      "modngarn_job"))
+  --help              Show this message and exit.
 ```
 
 ## Dev
