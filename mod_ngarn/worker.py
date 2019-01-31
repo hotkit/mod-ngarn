@@ -14,7 +14,7 @@ import asyncpg
 from dataclasses import dataclass, field
 
 from .connection import get_connection
-from .utils import escape_table_name, import_fn
+from .utils import import_fn
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -56,7 +56,7 @@ class Job:
     async def success(self, result: Dict, processing_time: Decimal) -> str:
         """ Success execution handler """
         return await self.cnx.execute(
-            f'UPDATE "{self.table}" SET result=$1, executed=NOW(), processed_time=$2 WHERE id=$3',
+            f'UPDATE {self.table} SET result=$1, executed=NOW(), processed_time=$2 WHERE id=$3',
             result,
             processing_time,
             self.id,
@@ -70,7 +70,7 @@ class Job:
             "Rescheduled, delay for {} seconds ({}) ".format(delay, next_schedule.isoformat())
         )
         return await self.cnx.execute(
-            f'UPDATE "{self.table}" SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1',
+            f'UPDATE {self.table} SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1',
             self.id,
             error,
             next_schedule,
@@ -86,7 +86,7 @@ class JobRunner:
     ):
 
         result = await cnx.fetchrow(
-            f"""SELECT id, fn_name, args, kwargs, priority FROM "{queue_table}"
+            f"""SELECT id, fn_name, args, kwargs, priority FROM {queue_table}
             WHERE executed IS NULL
             AND (scheduled IS NULL OR scheduled < NOW())
             AND canceled IS NULL

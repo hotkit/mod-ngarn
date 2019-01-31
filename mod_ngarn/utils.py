@@ -14,8 +14,8 @@ class ModuleNotfoundException(Exception):
     pass
 
 
-def escape_table_name(table_name: str):
-    return re.split("[, \"\']", table_name)[0]
+def sql_table_name(queue_table: str) -> str:
+    return ('.').join([f'"{x}"' for x in queue_table.split('.')])   
 
 
 async def get_fn_name(func: Union[str, Callable]) -> str:
@@ -55,14 +55,14 @@ async def import_fn(fn_name) -> Callable:
         raise ImportNotFoundException(e)
 
 
-async def create_table(name: str=None):
+async def create_table(name: str):
     if not name:
         name = os.getenv('MOD_NGARN_TABLE', 'modngarn_job')
     print(f"Creating table {name}...")
     cnx = await get_connection()
     async with cnx.transaction():
         await cnx.execute(
-            """CREATE TABLE IF NOT EXISTS "{queue_table}" (
+            """CREATE TABLE IF NOT EXISTS {queue_table} (
                     id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
                     fn_name TEXT NOT NULL,
                     args JSON DEFAULT '[]',
@@ -78,11 +78,11 @@ async def create_table(name: str=None):
                     PRIMARY KEY (id)
                 );
             """.format(
-                queue_table=escape_table_name(name)
+                queue_table=name
             )
         )
 
         await cnx.execute(
-            f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON "{name}" (executed) WHERE executed IS NULL;"""
+            f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON {name} (executed) WHERE executed IS NULL;"""
         )
     print(f"Done")

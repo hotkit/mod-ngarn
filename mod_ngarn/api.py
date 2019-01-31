@@ -4,7 +4,7 @@ from typing import Callable, Optional, Union
 
 import asyncpg
 
-from .utils import escape_table_name, get_fn_name
+from .utils import sql_table_name, get_fn_name
 
 
 async def add_job(
@@ -20,10 +20,10 @@ async def add_job(
     fn_name = await get_fn_name(func)
     return await cnx.fetchrow(
         """
-        INSERT INTO "{queue_table}" (id, fn_name, priority, scheduled, args, kwargs)
+        INSERT INTO {queue_table} (id, fn_name, priority, scheduled, args, kwargs)
         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
         """.format(
-            queue_table=queue_table
+            queue_table=sql_table_name(queue_table)
         ),
         job_id,
         fn_name,

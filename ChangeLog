@@ -1,3 +1,8 @@
+[[RELEASED 2.6]]
+
+2019-01-31  SukitOwl  <sukit_owl@hotmail.com>
+ Improvement: --queue-table support database schema
+
 2019-01-18  Tle Ekkul  <e.aryuth@gmail.com>
  Added: mod-ngarn --limit
 
