@@ -24,7 +24,7 @@ Usage: mod-ngarn run [OPTIONS]
 
 Options:
   --queue-table TEXT  Queue table name (Default: os.getenv("DBTABLE",
-                      "modngarn_job"))
+                      "public.modngarn_job"))
   --limit INTEGER     Limit jobs (Default: 300)
   --help              Show this message and exit.
 ```
@@ -35,7 +35,7 @@ Usage: mod-ngarn create-table [OPTIONS]
 
 Options:
   --queue-table TEXT  Queue table name (Default: os.getenv("DBTABLE",
-                      "modngarn_job"))
+                      "public.modngarn_job"))
   --help              Show this message and exit.
 ```
 
