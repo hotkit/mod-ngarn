@@ -15,8 +15,7 @@ class ModuleNotfoundException(Exception):
 
 
 def sql_table_name(queue_table: str) -> str:
-    schema, name = queue_table.split('.')
-    return f'"{schema}"."{name}"'    
+    return ('.').join([f'"{x}"' for x in queue_table.split('.')])   
 
 
 async def get_fn_name(func: Union[str, Callable]) -> str:
