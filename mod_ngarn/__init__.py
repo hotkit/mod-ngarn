@@ -27,11 +27,14 @@ def script():
     default=os.getenv("DBTABLE", "public.modngarn_job"),
 )
 @click.option("--limit", default=300, help="Limit jobs (Default: 300)")
-def run(queue_table, limit):
+@click.option("--max-delay", type=float, help="Max delay for failed jobs (seconds) (Default: None)")
+def run(queue_table, limit, max_delay):
     table_name = utils.sql_table_name(queue_table)
     job_runner = JobRunner()
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(job_runner.run(table_name, limit=limit))
+    if max_delay:
+        max_delay = float(max_delay)
+    loop.run_until_complete(job_runner.run(table_name, limit, max_delay))
 
 
 @click.command()
