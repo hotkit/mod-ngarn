@@ -58,7 +58,7 @@ class Job:
     async def success(self, result: Dict, processing_time: Decimal) -> str:
         """ Success execution handler """
         return await self.cnx.execute(
-            f'UPDATE {self.table} SET result=$1, executed=NOW(), processed_time=$2 WHERE id=$3',
+            f'UPDATE {self.table} SET result=$1, executed=NOW(), processed_time=$2, reason=NULL WHERE id=$3',
             result,
             processing_time,
             self.id,
