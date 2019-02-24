@@ -91,13 +91,15 @@ async def test_job_failed_record_to_db():
     job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
     assert job_db["result"] == None
     assert job_db["priority"] == 1
-    assert job_db["reason"] == "KeyError()"
+    assert "KeyError" in job_db["reason"]
+    assert "Traceback" in job_db["reason"]
 
     await job.execute()
     job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
     assert job_db["result"] == None
     assert job_db["priority"] == 2
-    assert job_db["reason"] == "KeyError()"
+    assert "KeyError" in job_db["reason"]
+    assert "Traceback" in job_db["reason"]
     await cnx.execute(f'TRUNCATE TABLE {queue_table};')
     await cnx.close()
 
@@ -232,4 +234,26 @@ async def test_job_runner_can_define_limit():
     total_processed = await cnx.fetchval(f'SELECT COUNT(*) FROM "modngarn_job" WHERE executed IS NOT NULL')
     assert total_processed == 20
     await cnx.execute(f'TRUNCATE TABLE "modngarn_job";')
+    await cnx.close()
+
+
+@pytest.mark.asyncio
+async def test_job_runner_success_should_clear_error_msg():
+    queue_table = 'public.modngarn_job'
+    await create_table(queue_table)
+    cnx = await get_connection()
+    await cnx.execute(f'TRUNCATE TABLE {queue_table};')
+    await cnx.execute(
+        """
+    INSERT INTO {queue_table} (id, fn_name, args, reason) VALUES ('job-1', 'tests.test_job.async_dummy_job', '["hello"]', 'some error message')
+    """.format( 
+            queue_table=queue_table
+        )
+    )
+    job_runner = JobRunner()
+    await job_runner.run(queue_table, 300, None)
+    job = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-1")
+    assert job["result"] == "hello"
+    assert job["reason"] is None
+    await cnx.execute(f'TRUNCATE TABLE {queue_table};')
     await cnx.close()

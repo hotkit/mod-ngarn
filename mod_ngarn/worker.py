@@ -52,13 +52,15 @@ class Job:
             await self.success(result, processing_time)
             return result
         except Exception as e:
-            log.error("Error#{}, {}".format(self.id, e.__repr__()))
-            await self.failed(e.__repr__())
+            stack_trace = traceback.format_exc()
+            error_msg = "{}\n{}".format(e.__repr__(), stack_trace)
+            log.error("Error#{}, {}".format(self.id, error_msg))
+            await self.failed(error_msg)
 
     async def success(self, result: Dict, processing_time: Decimal) -> str:
         """ Success execution handler """
         return await self.cnx.execute(
-            f'UPDATE {self.table} SET result=$1, executed=NOW(), processed_time=$2 WHERE id=$3',
+            f'UPDATE {self.table} SET result=$1, executed=NOW(), processed_time=$2, reason=NULL WHERE id=$3',
             result,
             processing_time,
             self.id,

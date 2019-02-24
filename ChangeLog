@@ -1,6 +1,7 @@
 2019-02-24  Tle Ekkul  <e.aryuth@gmail.com>
  Added: mod-ngarn run --max-delay
  Fixed: Expect backoff to Exponential backoff
+ Improvement: Record failed job error traceback
 
 [[RELEASED 2.6]]
 
