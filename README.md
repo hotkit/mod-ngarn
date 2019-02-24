@@ -26,7 +26,7 @@ Options:
   --queue-table TEXT  Queue table name (Default: os.getenv("DBTABLE",
                       "public.modngarn_job"))
   --limit INTEGER     Limit jobs (Default: 300)
-  --max-delay TEXT    Max delay for failed jobs (seconds)(Default: None)
+  --max-delay FLOAT   Max delay for failed jobs (seconds) (Default: None)
   --help              Show this message and exit.
 ```
 
