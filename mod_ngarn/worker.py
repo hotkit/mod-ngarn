@@ -34,7 +34,7 @@ class Job:
     priority: int
     args: List[Any] = field(default_factory=list)
     kwargs: Dict = field(default_factory=dict)
-    max_delay: int = None
+    max_delay: float = field(default=None)
 
     async def execute(self) -> Any:
         """ Execute the transaction """

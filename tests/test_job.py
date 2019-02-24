@@ -7,7 +7,7 @@ import pytest
 from mod_ngarn.connection import get_connection
 from mod_ngarn.utils import create_table
 from mod_ngarn.worker import Job, JobRunner
-
+from decimal import Decimal
 
 def sync_dummy_job(text):
     return text
@@ -137,11 +137,56 @@ async def test_job_failed_exponential_delay_job_based_on_priority():
     assert job_db["priority"] == 3
     assert job_db["scheduled"].isoformat() == "2018-01-01T12:00:07.389056+00:00"
 
-    # 10th failed, should delay e^4 sec
+    # 10th failed, should delay e^10 sec
     job.priority = 10
     await job.execute()
     job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
     assert job_db["scheduled"].isoformat() == "2018-01-01T18:07:06.465795+00:00"
+
+    await cnx.execute(f'TRUNCATE TABLE {queue_table};')
+    await cnx.close()
+
+
+@freezegun.freeze_time("2018-01-01T12:00:00+00:00")
+@pytest.mark.asyncio
+async def test_job_failed_can_set_max_delay():
+    queue_table = 'public.modngarn_job'
+    await create_table(queue_table)
+    cnx = await get_connection()
+    await cnx.execute(f'TRUNCATE TABLE {queue_table};')
+    await cnx.execute(
+        """
+    INSERT INTO {queue_table} (id, fn_name, args) VALUES ('job-2', 'tests.test_job.raise_dummy_job', '["hello"]')
+    """.format(
+            queue_table=queue_table
+        )
+    )
+    job = Job(cnx, queue_table, "job-2", "tests.test_job.raise_dummy_job", 0, max_delay=1.5)
+    # First failed, should delay 1 sec
+    await job.execute()
+    job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
+    assert job_db["priority"] == 1
+    assert job_db["scheduled"].isoformat() == "2018-01-01T12:00:01+00:00"
+
+    # Second failed, should delay 1.5 sec
+    job.priority = job_db["priority"]
+    await job.execute()
+    job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
+    assert job_db["priority"] == 2
+    assert job_db["scheduled"].isoformat() == "2018-01-01T12:00:01.500000+00:00"
+
+    # Third failed, should delay 1.5 sec
+    job.priority = job_db["priority"]
+    await job.execute()
+    job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
+    assert job_db["priority"] == 3
+    assert job_db["scheduled"].isoformat() == "2018-01-01T12:00:01.500000+00:00"
+
+    # 10th failed, should delay 1.5 sec
+    job.priority = 10
+    await job.execute()
+    job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
+    assert job_db["scheduled"].isoformat() == "2018-01-01T12:00:01.500000+00:00"
 
     await cnx.execute(f'TRUNCATE TABLE {queue_table};')
     await cnx.close()
