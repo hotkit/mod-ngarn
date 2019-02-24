@@ -251,7 +251,7 @@ async def test_job_runner_success_should_clear_error_msg():
         )
     )
     job_runner = JobRunner()
-    await job_runner.run(queue_table)
+    await job_runner.run(queue_table, 300, None)
     job = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-1")
     assert job["result"] == "hello"
     assert job["reason"] is None
