@@ -1,6 +1,6 @@
 """Simple async worker"""
 
-__version__ = "2.6"
+__version__ = "2.7"
 
 import asyncio
 import os
