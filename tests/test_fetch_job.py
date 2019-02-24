@@ -23,7 +23,7 @@ async def test_fetch_job_should_be_able_to_fetch_not_processed_job():
     )
     await cnx.execute(insert_query)
     job_runner = JobRunner()
-    job = await job_runner.fetch_job(cnx, queue_table)
+    job = await job_runner.fetch_job(cnx, queue_table, None)
     assert job.id == 'job-3'
     await cnx.execute(f'TRUNCATE TABLE {queue_table};')
     await cnx.close()
@@ -45,7 +45,7 @@ async def test_fetch_job_should_be_able_to_fetch_correct_scheduled_job():
     )
     await cnx.execute(insert_query)
     job_runner = JobRunner()
-    job = await job_runner.fetch_job(cnx, queue_table)
+    job = await job_runner.fetch_job(cnx, queue_table, None)
     assert job.id == 'job-2'
     await cnx.execute(f'TRUNCATE TABLE {queue_table};')
     await cnx.close()
@@ -68,7 +68,7 @@ async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
     )
     await cnx.execute(insert_query)
     job_runner = JobRunner()
-    job = await job_runner.fetch_job(cnx, queue_table)
+    job = await job_runner.fetch_job(cnx, queue_table, None)
     assert job.id == 'job-3'
     await cnx.execute(f'TRUNCATE TABLE {queue_table};')
     await cnx.close()
@@ -96,13 +96,13 @@ async def test_fetch_job_should_be_fetch_only_not_claimed_job():
     job_runner = JobRunner()
     tx1 = cnx1.transaction()
     await tx1.start()
-    job1 = await job_runner.fetch_job(cnx1, queue_table)
+    job1 = await job_runner.fetch_job(cnx1, queue_table, None)
 
     # Second worker fetch_job
     cnx2 = await get_connection()
     tx2 = cnx2.transaction()
     await tx2.start()
-    job2 = await job_runner.fetch_job(cnx2, queue_table)
+    job2 = await job_runner.fetch_job(cnx2, queue_table, None)
 
     assert job1.id == 'job-3'
     assert job2.id == 'job-2'

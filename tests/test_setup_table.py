@@ -21,7 +21,7 @@ async def test_can_create_table_and_fetch_job_with_specific_name():
     )
     await cnx.execute(insert_query)
     job_runner = JobRunner()
-    job = await job_runner.fetch_job(cnx, queue_table=table_name)
+    job = await job_runner.fetch_job(cnx, table_name, None)
     assert job.id == 'job-3'
     await cnx.execute(f'TRUNCATE TABLE {table_name};')
     await cnx.close()

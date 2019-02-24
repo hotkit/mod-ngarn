@@ -8,6 +8,7 @@ import traceback
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Callable, Dict, List
+import math
 
 import asyncpg
 
@@ -33,6 +34,7 @@ class Job:
     priority: int
     args: List[Any] = field(default_factory=list)
     kwargs: Dict = field(default_factory=dict)
+    max_delay: float = field(default=None)
 
     async def execute(self) -> Any:
         """ Execute the transaction """
@@ -66,7 +68,7 @@ class Job:
 
     async def failed(self, error: str) -> str:
         """ Failed execution handler """
-        delay = 2 ** self.priority
+        delay = await self.delay()
         next_schedule = datetime.now(timezone.utc) + timedelta(seconds=delay)
         log.error(
             "Rescheduled, delay for {} seconds ({}) ".format(delay, next_schedule.isoformat())
@@ -78,13 +80,18 @@ class Job:
             next_schedule,
         )
 
+    async def delay(self):
+        delay = math.exp(self.priority)
+        return min(delay, self.max_delay or delay)
+
 
 @dataclass
 class JobRunner:
     async def fetch_job(
         self,
         cnx: asyncpg.Connection,
-        queue_table: str
+        queue_table: str,
+        max_delay: float
     ):
 
         result = await cnx.fetchrow(
@@ -107,21 +114,19 @@ class JobRunner:
                 result["priority"],
                 result["args"],
                 result["kwargs"],
+                max_delay=max_delay
             )
 
-    async def run(
-        self, queue_table, limit: int = 300
-    ):
+    async def run(self, queue_table, limit, max_delay):
         cnx = await get_connection()
-        log.info(f"Running mod-ngarn, queue table name: {queue_table}, limit: {limit} jobs")
+        log.info(f"Running mod-ngarn, queue table name: {queue_table}, limit: {limit} jobs, max_delay: {max_delay}")
         for job_number in range(1, limit + 1):
             async with cnx.transaction(isolation="serializable"):
-                job = await self.fetch_job(cnx, queue_table)
+                job = await self.fetch_job(cnx, queue_table, max_delay)
                 if job:
                     log.info(f"Executing#{job_number}: \t{job.id}")
                     result = await job.execute()
                     log.info(f"Executed#{job_number}: \t{result}")
                 else:
-                    log.info("No job left, exiting...")
                     break
         await cnx.close()
