@@ -8,6 +8,7 @@ import traceback
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Callable, Dict, List
+import math
 
 import asyncpg
 
@@ -33,6 +34,7 @@ class Job:
     priority: int
     args: List[Any] = field(default_factory=list)
     kwargs: Dict = field(default_factory=dict)
+    max_delay: int = None
 
     async def execute(self) -> Any:
         """ Execute the transaction """
@@ -64,7 +66,7 @@ class Job:
 
     async def failed(self, error: str) -> str:
         """ Failed execution handler """
-        delay = 2 ** self.priority
+        delay = await self.delay()
         next_schedule = datetime.now(timezone.utc) + timedelta(seconds=delay)
         log.error(
             "Rescheduled, delay for {} seconds ({}) ".format(delay, next_schedule.isoformat())
@@ -75,6 +77,12 @@ class Job:
             error,
             next_schedule,
         )
+
+    async def delay(self):
+        delay = math.exp(self.priority)
+        if self.max_delay and delay > self.max_delay:
+            return self.max_delay
+        return delay
 
 
 @dataclass

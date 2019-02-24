@@ -123,25 +123,25 @@ async def test_job_failed_exponential_delay_job_based_on_priority():
     assert job_db["priority"] == 1
     assert job_db["scheduled"].isoformat() == "2018-01-01T12:00:01+00:00"
 
-    # Second failed, should delay 2 sec
+    # Second failed, should delay e^2 sec
     job.priority = job_db["priority"]
     await job.execute()
     job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
     assert job_db["priority"] == 2
-    assert job_db["scheduled"].isoformat() == "2018-01-01T12:00:02+00:00"
+    assert job_db["scheduled"].isoformat() == "2018-01-01T12:00:02.718282+00:00"
 
-    # Third failed, should delay 4 sec
+    # Third failed, should delay e^3 sec
     job.priority = job_db["priority"]
     await job.execute()
     job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
     assert job_db["priority"] == 3
-    assert job_db["scheduled"].isoformat() == "2018-01-01T12:00:04+00:00"
+    assert job_db["scheduled"].isoformat() == "2018-01-01T12:00:07.389056+00:00"
 
-    # 10th failed, should delay 1024 sec
+    # 10th failed, should delay e^4 sec
     job.priority = 10
     await job.execute()
     job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
-    assert job_db["scheduled"].isoformat() == "2018-01-01T12:17:04+00:00"
+    assert job_db["scheduled"].isoformat() == "2018-01-01T18:07:06.465795+00:00"
 
     await cnx.execute(f'TRUNCATE TABLE {queue_table};')
     await cnx.close()
