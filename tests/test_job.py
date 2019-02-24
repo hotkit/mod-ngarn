@@ -206,7 +206,7 @@ async def test_job_runner_success_process():
         )
     )
     job_runner = JobRunner()
-    await job_runner.run(queue_table)
+    await job_runner.run(queue_table, 300, None)
     job = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-1")
     assert job["result"] == "hello"
     await cnx.execute(f'TRUNCATE TABLE {queue_table};')
@@ -225,10 +225,10 @@ async def test_job_runner_can_define_limit():
             FROM generate_series(0, 100) s;"""
     )
     job_runner = JobRunner()
-    await job_runner.run('modngarn_job', limit=10)
+    await job_runner.run('modngarn_job', 10, None)
     total_processed = await cnx.fetchval(f'SELECT COUNT(*) FROM "modngarn_job" WHERE executed IS NOT NULL')
     assert total_processed == 10
-    await job_runner.run('modngarn_job', limit=10)
+    await job_runner.run('modngarn_job', 10, None)
     total_processed = await cnx.fetchval(f'SELECT COUNT(*) FROM "modngarn_job" WHERE executed IS NOT NULL')
     assert total_processed == 20
     await cnx.execute(f'TRUNCATE TABLE "modngarn_job";')

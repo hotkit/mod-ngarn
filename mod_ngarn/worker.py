@@ -90,7 +90,8 @@ class JobRunner:
     async def fetch_job(
         self,
         cnx: asyncpg.Connection,
-        queue_table: str
+        queue_table: str,
+        max_delay: float
     ):
 
         result = await cnx.fetchrow(
@@ -113,21 +114,19 @@ class JobRunner:
                 result["priority"],
                 result["args"],
                 result["kwargs"],
+                max_delay=max_delay
             )
 
-    async def run(
-        self, queue_table, limit: int = 300
-    ):
+    async def run(self, queue_table, limit, max_delay):
         cnx = await get_connection()
-        log.info(f"Running mod-ngarn, queue table name: {queue_table}, limit: {limit} jobs")
+        log.info(f"Running mod-ngarn, queue table name: {queue_table}, limit: {limit} jobs, max_delay: {max_delay}")
         for job_number in range(1, limit + 1):
             async with cnx.transaction(isolation="serializable"):
-                job = await self.fetch_job(cnx, queue_table)
+                job = await self.fetch_job(cnx, queue_table, max_delay)
                 if job:
                     log.info(f"Executing#{job_number}: \t{job.id}")
                     result = await job.execute()
                     log.info(f"Executed#{job_number}: \t{result}")
                 else:
-                    log.info("No job left, exiting...")
                     break
         await cnx.close()
