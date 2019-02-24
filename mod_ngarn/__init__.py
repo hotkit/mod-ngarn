@@ -27,7 +27,7 @@ def script():
     default=os.getenv("DBTABLE", "public.modngarn_job"),
 )
 @click.option("--limit", default=300, help="Limit jobs (Default: 300)")
-@click.option("--max-delay", help="Max delay for failed jobs (seconds)(Default: None)")
+@click.option("--max-delay", type=float, help="Max delay for failed jobs (seconds) (Default: None)")
 def run(queue_table, limit, max_delay):
     table_name = utils.sql_table_name(queue_table)
     job_runner = JobRunner()
