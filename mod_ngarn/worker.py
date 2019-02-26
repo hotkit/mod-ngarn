@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import logging
+import math
 import os
 import sys
 import time
@@ -8,7 +9,6 @@ import traceback
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Callable, Dict, List
-import math
 
 import asyncpg
 
@@ -121,7 +121,9 @@ class JobRunner:
         cnx = await get_connection()
         log.info(f"Running mod-ngarn, queue table name: {queue_table}, limit: {limit} jobs, max_delay: {max_delay}")
         for job_number in range(1, limit + 1):
-            async with cnx.transaction(isolation="serializable"):
+            # We can reduce isolation to Read Committed
+            # because we are using SKIP LOCK FOR UPDATE
+            async with cnx.transaction(isolation="read_committed"):
                 job = await self.fetch_job(cnx, queue_table, max_delay)
                 if job:
                     log.info(f"Executing#{job_number}: \t{job.id}")
