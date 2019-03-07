@@ -1,3 +1,8 @@
+[[RELEASED 2.9]]
+
+2019-03-07  Tle Ekkul  <e.aryuth@gmail.com>
+ Fixed: delay can be math overflow
+
 [[RELEASED 2.8]]
 
 2019-02-26  Tle Ekkul  <e.aryuth@gmail.com>

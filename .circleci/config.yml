@@ -1,0 +1,56 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version you desire here
+      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
+      - image: circleci/python:3.7
+      - image: circleci/postgres:11
+
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pyproject.toml" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run:
+          name: install flit
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install flit
+      
+      - run:
+          name: install dependencies
+          command: |
+            . venv/bin/activate
+            flit install
+
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "pyproject.toml" }}
+
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            pytest -v --cov-report term-missing --cov=. --cov-config .coveragerc
+
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports

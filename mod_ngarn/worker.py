@@ -81,8 +81,10 @@ class Job:
         )
 
     async def delay(self):
-        delay = math.exp(self.priority)
-        return min(delay, self.max_delay or delay)
+        priority = self.priority
+        if self.max_delay:
+            priority = min(priority, math.log(self.max_delay))
+        return math.exp(priority)
 
 
 @dataclass
