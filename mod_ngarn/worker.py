@@ -83,8 +83,8 @@ class Job:
 
     async def delay(self):
         # max int > e^21 and max int < e^22
-        priority = 21 if self.priority > 21 else self.priority
-        next_priority = 21 if priority == 21 else priority + 1
+        priority = min(self.priority, 20)
+        next_priority = priority + 1
         if self.max_delay:
             priority = min(priority, math.log(self.max_delay))
         return next_priority, math.exp(priority)
@@ -135,5 +135,5 @@ class JobRunner:
                     result = await job.execute()
                     log.info(f"Executed#{job_number}: \t{result}")
                 else:
-                    break
+                    sys.exit(3)
         await cnx.close()
