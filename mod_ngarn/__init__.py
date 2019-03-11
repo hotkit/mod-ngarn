@@ -4,6 +4,7 @@ __version__ = "2.9"
 
 import asyncio
 import os
+import sys
 
 import click
 
