@@ -1,9 +1,10 @@
 """Simple async worker"""
 
-__version__ = "2.9"
+__version__ = "3.0"
 
 import asyncio
 import os
+import sys
 
 import click
 

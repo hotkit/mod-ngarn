@@ -77,11 +77,12 @@ class Job:
             f'UPDATE {self.table} SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1',
             self.id,
             error,
-            next_schedule,
+            next_schedule
         )
 
     async def delay(self):
-        priority = self.priority
+        # max int > e^21 and max int < e^22
+        priority = min(self.priority, 21)
         if self.max_delay:
             priority = min(priority, math.log(self.max_delay))
         return math.exp(priority)
@@ -132,5 +133,5 @@ class JobRunner:
                     result = await job.execute()
                     log.info(f"Executed#{job_number}: \t{result}")
                 else:
-                    break
+                    sys.exit(3)
         await cnx.close()

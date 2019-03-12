@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from unittest import TestCase
+import asyncio
 
 import freezegun
 import pytest
@@ -94,6 +95,7 @@ async def test_job_failed_record_to_db():
     assert "KeyError" in job_db["reason"]
     assert "Traceback" in job_db["reason"]
 
+    job = Job(cnx, queue_table, "job-2", "tests.test_job.raise_dummy_job", 1)
     await job.execute()
     job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
     assert job_db["result"] == None
@@ -144,6 +146,18 @@ async def test_job_failed_exponential_delay_job_based_on_priority():
     await job.execute()
     job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
     assert job_db["scheduled"].isoformat() == "2018-01-01T18:07:06.465795+00:00"
+
+    # 21th failed, should be priority 21
+    job.priority = 21
+    await job.execute()
+    job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
+    assert job_db["scheduled"].isoformat() == "2059-10-17T13:42:14.483215+00:00"
+
+    # 22th failed, should be priority 21
+    job.priority = 22
+    await job.execute()
+    job_db = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-2")
+    assert job_db["scheduled"].isoformat() == "2059-10-17T13:42:14.483215+00:00"
 
     await cnx.execute(f'TRUNCATE TABLE {queue_table};')
     await cnx.close()
@@ -208,7 +222,7 @@ async def test_job_runner_success_process():
         )
     )
     job_runner = JobRunner()
-    await job_runner.run(queue_table, 300, None)
+    await job_runner.run(queue_table, 1, None)
     job = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-1")
     assert job["result"] == "hello"
     await cnx.execute(f'TRUNCATE TABLE {queue_table};')
@@ -251,9 +265,38 @@ async def test_job_runner_success_should_clear_error_msg():
         )
     )
     job_runner = JobRunner()
-    await job_runner.run(queue_table, 300, None)
+    await job_runner.run(queue_table, 1, None)
     job = await cnx.fetchrow(f'SELECT * FROM {queue_table} WHERE id=$1', "job-1")
     assert job["result"] == "hello"
     assert job["reason"] is None
     await cnx.execute(f'TRUNCATE TABLE {queue_table};')
     await cnx.close()
+
+
+class TestExitFromJobRunner(TestCase):
+    def async_test(f):
+        def wrapper(*args, **kwargs):
+            coro = asyncio.coroutine(f)
+            future = coro(*args, **kwargs)
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(future)
+        return wrapper
+
+    @async_test
+    async def test_job_runner_should_return_exit_code_if_no_more_job(self):
+        queue_table = 'public.modngarn_job'
+        await create_table(queue_table)
+        cnx = await get_connection()
+        await cnx.execute(f'TRUNCATE TABLE {queue_table};')
+        await cnx.execute(
+            """
+        INSERT INTO {queue_table} (id, fn_name, args, reason) VALUES ('job-1', 'tests.test_job.async_dummy_job', '["hello"]', 'some error message')
+        """.format( 
+                queue_table=queue_table
+            )
+        )
+        job_runner = JobRunner()
+        with self.assertRaises(SystemExit) as exit:
+            await job_runner.run(queue_table, 2, None)
+
+        self.assertEqual(exit.exception.code, 3)
