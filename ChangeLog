@@ -1,3 +1,9 @@
+[[RELEASED 3.0]]
+
+2019-03-07  Sukit  <sukit_owl@hotmail.com>
+ Fixed: delay can be math overflow
+ Added: Return exit code 3 when no more job
+
 [[RELEASED 2.9]]
 
 2019-03-07  Tle Ekkul  <e.aryuth@gmail.com>
