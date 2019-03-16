@@ -9,6 +9,8 @@ jobs:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
       - image: circleci/python:3.7
+        environment:
+          PGDBNAME: circle_test
       - image: circleci/postgres:11
 
       # Specify service dependencies here if necessary
@@ -49,7 +51,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pytest -v --cov-report term-missing --cov=. --cov-config .coveragerc
+            ./runtests.sh
 
       - store_artifacts:
           path: test-reports
