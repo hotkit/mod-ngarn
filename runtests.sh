@@ -4,7 +4,7 @@ set -eux
 # createuser -h $PGHOST -U postgres -dl $PGUSER || echo "User $PGUSER already exists, skipping"
 # dropdb -h $PGHOST -U postgres $PGDBNAME || echo "$PGDBNAME hasn't created before"
 # createdb -h $PGHOST -U postgres -O $PGUSER $PGDBNAME
-PGDBNAME="test_mod_ngarn"
+PGDBNAME=${1:-"test_mod_ngarn"}
 dropdb -U postgres $PGDBNAME || echo "$PGDBNAME hasn't created before"
 createdb -U postgres $PGDBNAME
 
