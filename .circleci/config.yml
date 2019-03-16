@@ -51,7 +51,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            ./runtests.sh
+            PGDBNAME=$PGDBNAME pytest -v --cov-report term-missing --cov=. --cov-config .coveragerc
 
       - store_artifacts:
           path: test-reports
