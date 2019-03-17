@@ -51,7 +51,6 @@ jobs:
           command: |
             . venv/bin/activate
             PGDBNAME=circle_test pytest -v --cov-report term-missing --cov=. --cov-report xml:test-reports/coverage.xml
-      - run: coverage report && coverage xml -o test-reports/coverage.xml
       - store_test_results:
           path: test-reports
       - store_artifacts:
