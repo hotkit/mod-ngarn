@@ -24,38 +24,35 @@ jobs:
 
     steps:
       - checkout
-
       # Download and cache dependencies
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "pyproject.toml" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
-
       - run:
           name: install flit
           command: |
             python3 -m venv venv
             . venv/bin/activate
             pip install flit
-      
       - run:
           name: install dependencies
           command: |
             . venv/bin/activate
             flit install
-
       - save_cache:
           paths:
             - ./venv
           key: v1-dependencies-{{ checksum "pyproject.toml" }}
-
       - run:
           name: run tests
           command: |
             . venv/bin/activate
             PGDBNAME=circle_test pytest -v --cov-report term-missing --cov=. --cov-config .coveragerc
-
+      - run: mkdir test-reports
+      - run: coverage report && coverage xml -o test-reports/coverage.xml
+      - store_test_results:
+        path: test-reports
       - store_artifacts:
-          path: test-reports
-          destination: test-reports
+        path: test-reports
