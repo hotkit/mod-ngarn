@@ -1,5 +1,6 @@
-# mod-ngarn
-ModNgarn – Simple job workers
+# mod-ngarn 
+
+[![CircleCI](https://circleci.com/gh/Proteus-tech/mod-ngarn.svg?style=svg)](https://circleci.com/gh/Proteus-tech/mod-ngarn) [![PyPI version](https://badge.fury.io/py/mod_ngarn.svg)](https://badge.fury.io/py/mod_ngarn)
 
 ## Usage
 ```

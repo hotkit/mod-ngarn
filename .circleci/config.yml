@@ -4,53 +4,51 @@
 #
 version: 2
 jobs:
-  build:
+  Python_3.7:
     docker:
-      # specify the version you desire here
-      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
       - image: circleci/python:3.7
+        environment:
+          PGDBNAME: circle_test
       - image: circleci/postgres:11
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-
+        environment:
+          POSTGRES_USER: circleci
+          POSTGRES_DB: circle_test
     working_directory: ~/repo
-
-    steps:
+    steps: &steps
       - checkout
-
       # Download and cache dependencies
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "pyproject.toml" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
-
       - run:
           name: install flit
           command: |
             python3 -m venv venv
             . venv/bin/activate
             pip install flit
-      
       - run:
           name: install dependencies
           command: |
             . venv/bin/activate
             flit install
-
       - save_cache:
           paths:
             - ./venv
           key: v1-dependencies-{{ checksum "pyproject.toml" }}
-
+      - run: mkdir test-reports
       - run:
           name: run tests
           command: |
             . venv/bin/activate
-            pytest -v --cov-report term-missing --cov=. --cov-config .coveragerc
-
+            PGDBNAME=circle_test pytest -v --cov-report term-missing --cov=. --cov-report xml:test-reports/coverage.xml
+      - store_test_results:
+          path: test-reports
       - store_artifacts:
           path: test-reports
-          destination: test-reports
+workflows:
+  version: 2
+  build:
+    jobs:
+      - Python_3.7
