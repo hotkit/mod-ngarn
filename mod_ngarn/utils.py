@@ -15,7 +15,11 @@ class ModuleNotfoundException(Exception):
 
 
 def sql_table_name(queue_table: str) -> str:
-    return ('.').join([f'"{x}"' for x in queue_table.split('.')])   
+    return (".").join([f'"{x}"' for x in queue_table.replace('"', "").split(".")])
+
+
+def notify_channel(queue_table: str) -> str:
+    return queue_table.replace('"', "").replace(".", "_")
 
 
 async def get_fn_name(func: Union[str, Callable]) -> str:
