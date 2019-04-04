@@ -56,8 +56,6 @@ async def import_fn(fn_name) -> Callable:
 
 
 async def create_table(name: str):
-    if not name:
-        name = os.getenv('MOD_NGARN_TABLE', 'modngarn_job')
     print(f"Creating table {name}...")
     cnx = await get_connection()
     async with cnx.transaction():
