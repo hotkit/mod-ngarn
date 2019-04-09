@@ -101,6 +101,7 @@ async def wait_for_notify(queue_table: str, q: asyncio.Queue):
     cnx = await get_connection()
 
     def notified(cnx, pid: int, channel: str, payload: str):
+        print("Notified, shutting down...")
         asyncio.gather(cnx.close(), q.put(channel))
 
     await cnx.add_listener(notify_ch, notified)
@@ -108,6 +109,5 @@ async def wait_for_notify(queue_table: str, q: asyncio.Queue):
 
 async def shutdown(q: asyncio.Queue):
     """ Gracefully shutdown when something put to the Queue """
-    print("Shutting down...")
     await q.get()
     sys.exit()
