@@ -1,3 +1,7 @@
+2019-04-09  Tle Ekkul  <e.aryuth@gmail.com>
+ Added: Notify when job get inserted
+ Added: `mod-ngarn wait-for-notify` that will exit when get notified
+
 [[RELEASED 3.0]]
 
 2019-03-07  Sukit  <sukit_owl@hotmail.com>
