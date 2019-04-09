@@ -91,6 +91,26 @@ async def create_table(name: str):
         await cnx.execute(
             f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON {name} (executed) WHERE executed IS NULL;"""
         )
+
+        await cnx.execute(
+            """
+        CREATE OR REPLACE FUNCTION {notify_channel}_notify_job()
+        RETURNS TRIGGER LANGUAGE plpgsql AS $$
+        BEGIN
+            NOTIFY {notify_channel};
+            RETURN NEW;
+        END;
+        $$;
+
+        DROP TRIGGER IF EXISTS {notify_channel}_notify_job_inserted ON {table_name};
+        CREATE TRIGGER {notify_channel}_notify_job_inserted
+        AFTER INSERT ON {table_name}
+        FOR EACH ROW
+        EXECUTE PROCEDURE {notify_channel}_notify_job();
+        """.format(
+                notify_channel=notify_channel(name), table_name=name
+            )
+        )
     print(f"Done")
 
 
@@ -100,7 +120,7 @@ async def wait_for_notify(queue_table: str, q: asyncio.Queue):
     print(f"LISTENING ON {notify_ch}...")
     cnx = await get_connection()
 
-    def notified(cnx, pid: int, channel: str, payload: str):
+    def notified(cnx: Connection, pid: int, channel: str, payload: str):
         print("Notified, shutting down...")
         asyncio.gather(cnx.close(), q.put(channel))
 
