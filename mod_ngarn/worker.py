@@ -48,7 +48,9 @@ class Job:
                 result = await loop.run_in_executor(
                     None, functools.partial(func, *self.args, **self.kwargs)
                 )
-            processing_time = str(Decimal(str(time.time() - start_time)).quantize(Decimal(".001")))
+            processing_time = str(
+                Decimal(str(time.time() - start_time)).quantize(Decimal(".001"))
+            )
             await self.success(result, processing_time)
             return result
         except Exception as e:
@@ -60,7 +62,7 @@ class Job:
     async def success(self, result: Dict, processing_time: Decimal) -> str:
         """ Success execution handler """
         return await self.cnx.execute(
-            f'UPDATE {self.table} SET result=$1, executed=NOW(), processed_time=$2, reason=NULL WHERE id=$3',
+            f"UPDATE {self.table} SET result=$1, executed=NOW(), processed_time=$2, reason=NULL WHERE id=$3",
             result,
             processing_time,
             self.id,
@@ -71,13 +73,15 @@ class Job:
         delay = await self.delay()
         next_schedule = datetime.now(timezone.utc) + timedelta(seconds=delay)
         log.error(
-            "Rescheduled, delay for {} seconds ({}) ".format(delay, next_schedule.isoformat())
+            "Rescheduled, delay for {} seconds ({}) ".format(
+                delay, next_schedule.isoformat()
+            )
         )
         return await self.cnx.execute(
-            f'UPDATE {self.table} SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1',
+            f"UPDATE {self.table} SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1",
             self.id,
             error,
-            next_schedule
+            next_schedule,
         )
 
     async def delay(self):
@@ -91,10 +95,7 @@ class Job:
 @dataclass
 class JobRunner:
     async def fetch_job(
-        self,
-        cnx: asyncpg.Connection,
-        queue_table: str,
-        max_delay: float
+        self, cnx: asyncpg.Connection, queue_table: str, max_delay: float
     ):
 
         result = await cnx.fetchrow(
@@ -117,12 +118,14 @@ class JobRunner:
                 result["priority"],
                 result["args"],
                 result["kwargs"],
-                max_delay=max_delay
+                max_delay=max_delay,
             )
 
     async def run(self, queue_table, limit, max_delay):
         cnx = await get_connection()
-        log.info(f"Running mod-ngarn, queue table name: {queue_table}, limit: {limit} jobs, max_delay: {max_delay}")
+        log.info(
+            f"Running mod-ngarn, queue table name: {queue_table}, limit: {limit} jobs, max_delay: {max_delay}"
+        )
         for job_number in range(1, limit + 1):
             # We can reduce isolation to Read Committed
             # because we are using SKIP LOCK FOR UPDATE

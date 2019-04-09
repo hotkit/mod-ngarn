@@ -1,7 +1,11 @@
+import asyncio
 import os
 import re
+import sys
 from inspect import getmembers, getmodule, ismethod
 from typing import Callable, Union
+
+from asyncpg.connection import Connection
 
 from .connection import get_connection
 
@@ -27,11 +31,11 @@ async def get_fn_name(func: Union[str, Callable]) -> str:
         if isinstance(func, str):
             return func
         if ismethod(func):
-            module_name = get_fn_name(dict(getmembers(func))['__self__'])
+            module_name = get_fn_name(dict(getmembers(func))["__self__"])
         else:
             module_name = getmodule(func).__name__
         name = func.__name__
-        return '.'.join([module_name, name])
+        return ".".join([module_name, name])
     except AttributeError as e:
         raise ModuleNotfoundException(e)
 
@@ -88,3 +92,22 @@ async def create_table(name: str):
             f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON {name} (executed) WHERE executed IS NULL;"""
         )
     print(f"Done")
+
+
+async def wait_for_notify(queue_table: str, q: asyncio.Queue):
+    """ Wait for notification and put channel to the Queue """
+    notify_ch = notify_channel(queue_table)
+    print(f"LISTENING ON {notify_ch}...")
+    cnx = await get_connection()
+
+    def notified(cnx, pid: int, channel: str, payload: str):
+        asyncio.gather(cnx.close(), q.put(channel))
+
+    await cnx.add_listener(notify_ch, notified)
+
+
+async def shutdown(q: asyncio.Queue):
+    """ Gracefully shutdown when something put to the Queue """
+    print("Shutting down...")
+    await q.get()
+    sys.exit()

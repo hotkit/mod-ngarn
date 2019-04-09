@@ -28,8 +28,13 @@ def script():
     default=os.getenv("DBTABLE", "public.modngarn_job"),
 )
 @click.option("--limit", default=300, help="Limit jobs (Default: 300)")
-@click.option("--max-delay", type=float, help="Max delay for failed jobs (seconds) (Default: None)")
+@click.option(
+    "--max-delay",
+    type=float,
+    help="Max delay for failed jobs (seconds) (Default: None)",
+)
 def run(queue_table, limit, max_delay):
+    "Run mod-ngarn job"
     table_name = utils.sql_table_name(queue_table)
     job_runner = JobRunner()
     loop = asyncio.get_event_loop()
@@ -45,9 +50,27 @@ def run(queue_table, limit, max_delay):
     default=os.getenv("DBTABLE", "public.modngarn_job"),
 )
 def create_table(queue_table):
+    "Create mod-ngarn queue table"
     table_name = utils.sql_table_name(queue_table)
     asyncio.run(utils.create_table(table_name))
 
 
+@click.command()
+@click.option(
+    "--queue-table",
+    help='Queue table name (Default: os.getenv("DBTABLE", "public.modngarn_job"))',
+    default=os.getenv("DBTABLE", "public.modngarn_job"),
+)
+def wait_for_notify(queue_table):
+    "Wait and listening for NOTIFY"
+    table_name = utils.sql_table_name(queue_table)
+    loop = asyncio.get_event_loop()
+    notification_queue = asyncio.Queue(loop=loop)
+    loop.create_task(utils.wait_for_notify(table_name, notification_queue))
+    loop.run_until_complete(utils.shutdown(notification_queue))
+    loop.run_forever()
+
+
 script.add_command(run)
 script.add_command(create_table)
+script.add_command(wait_for_notify)
