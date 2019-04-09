@@ -10,8 +10,9 @@ Options:
   --help  Show this message and exit.
 
 Commands:
-  create-table
-  run
+  create-table     Create mod-ngarn queue table
+  run              Run mod-ngarn job
+  wait-for-notify  Wait and listening for NOTIFY
 ```
 
 ## Installation
@@ -45,6 +46,17 @@ Options:
   --help              Show this message and exit.
 ```
 
+## Wait for notify
+```
+Usage: mod-ngarn wait-for-notify [OPTIONS]
+
+  Wait and listening for NOTIFY
+
+Options:
+  --queue-table TEXT  Queue table name (Default: os.getenv("DBTABLE",
+                      "public.modngarn_job"))
+  --help              Show this message and exit.
+```
 ## Dev
 ### Required
 - pipenv (https://github.com/pypa/pipenv)
