@@ -319,22 +319,3 @@ class TestExitFromJobRunner(TestCase):
             loop.run_until_complete(future)
 
         return wrapper
-
-    @async_test
-    async def test_job_runner_should_return_exit_code_if_no_more_job(self):
-        queue_table = "public.modngarn_job"
-        await create_table(queue_table)
-        cnx = await get_connection()
-        await cnx.execute(f"TRUNCATE TABLE {queue_table};")
-        await cnx.execute(
-            """
-        INSERT INTO {queue_table} (id, fn_name, args, reason) VALUES ('job-1', 'tests.test_job.async_dummy_job', '["hello"]', 'some error message')
-        """.format(
-                queue_table=queue_table
-            )
-        )
-        job_runner = JobRunner()
-        with self.assertRaises(SystemExit) as exit:
-            await job_runner.run(queue_table, 2, None)
-
-        self.assertEqual(exit.exception.code, 3)
