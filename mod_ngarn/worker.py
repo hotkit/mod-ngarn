@@ -136,5 +136,5 @@ class JobRunner:
                     result = await job.execute()
                     log.info(f"Executed#{job_number}: \t{result}")
                 else:
-                    sys.exit(3)
+                    break
         await cnx.close()
