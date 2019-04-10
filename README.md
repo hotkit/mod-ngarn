@@ -57,6 +57,19 @@ Options:
                       "public.modngarn_job"))
   --help              Show this message and exit.
 ```
+
+## Example run script
+```
+#!/bin/bash
+set -u
+
+while true
+do
+    mod-ngarn run $*
+    timeout 5 mod-ngarn wait-for-notify
+done
+```
+
 ## Dev
 ### Required
 - pipenv (https://github.com/pypa/pipenv)
