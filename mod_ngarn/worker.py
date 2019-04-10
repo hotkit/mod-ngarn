@@ -135,4 +135,6 @@ class JobRunner:
                     log.info(f"Executing#{job_number}: \t{job.id}")
                     result = await job.execute()
                     log.info(f"Executed#{job_number}: \t{result}")
+                else:
+                    break
         await cnx.close()
