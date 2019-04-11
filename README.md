@@ -24,16 +24,14 @@ pip install mod-ngarn
 ```
 Usage: mod-ngarn run [OPTIONS]
 
+  Run mod-ngarn job
+
 Options:
   --queue-table TEXT  Queue table name (Default: os.getenv("DBTABLE",
                       "public.modngarn_job"))
   --limit INTEGER     Limit jobs (Default: 300)
   --max-delay FLOAT   Max delay for failed jobs (seconds) (Default: None)
   --help              Show this message and exit.
-
-Returns:
-  Exit code 0   Success run all <--limit> job
-  Exit code 3   Success run but has job less than <--limit> 
 ```
 
 ## Create modngarn job queue table
