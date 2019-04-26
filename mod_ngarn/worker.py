@@ -14,7 +14,7 @@ import asyncpg
 
 from dataclasses import dataclass, field
 
-from .connection import get_connection
+from .connection import DBConnection
 from .utils import import_fn
 
 logging.basicConfig(
@@ -122,19 +122,18 @@ class JobRunner:
             )
 
     async def run(self, queue_table, limit, max_delay):
-        cnx = await get_connection()
-        log.info(
-            f"Running mod-ngarn, queue table name: {queue_table}, limit: {limit} jobs, max_delay: {max_delay}"
-        )
-        for job_number in range(1, limit + 1):
-            # We can reduce isolation to Read Committed
-            # because we are using SKIP LOCK FOR UPDATE
-            async with cnx.transaction(isolation="read_committed"):
-                job = await self.fetch_job(cnx, queue_table, max_delay)
-                if job:
-                    log.info(f"Executing#{job_number}: \t{job.id}")
-                    result = await job.execute()
-                    log.info(f"Executed#{job_number}: \t{result}")
-                else:
-                    break
-        await cnx.close()
+        async with DBConnection() as cnx:
+            log.info(
+                f"Running mod-ngarn, queue table name: {queue_table}, limit: {limit} jobs, max_delay: {max_delay}"
+            )
+            for job_number in range(1, limit + 1):
+                # We can reduce isolation to Read Committed
+                # because we are using SKIP LOCK FOR UPDATE
+                async with cnx.transaction(isolation="read_committed"):
+                    job = await self.fetch_job(cnx, queue_table, max_delay)
+                    if job:
+                        log.info(f"Executing#{job_number}: \t{job.id}")
+                        result = await job.execute()
+                        log.info(f"Executed#{job_number}: \t{result}")
+                    else:
+                        break

@@ -1,3 +1,8 @@
+[[RELEASED 3.3]]
+
+2019-04-09  SukitOwl  <sukit_owl@hotmail.com>
+ Changed: Added DBConnection class for use with block
+
 [[RELEASED 3.2]]
 
 2019-04-09  Tle Ekkul  <e.aryuth@gmail.com>
