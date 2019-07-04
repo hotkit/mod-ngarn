@@ -70,6 +70,22 @@ def wait_for_notify(queue_table):
     loop.run_until_complete(utils.shutdown(notification_queue))
     loop.run_forever()
 
+@click.command()
+@click.option(
+    "--queue-table",
+    help='Queue table name (Default: os.getenv("DBTABLE", "public.modngarn_job"))',
+    default=os.getenv("DBTABLE", "public.modngarn_job"),
+)
+def add_delete_job(queue_table):
+    return "test"
+    # "Wait and listening for NOTIFY"
+    # table_name = utils.sql_table_name(queue_table)
+    # loop = asyncio.get_event_loop()
+    # notification_queue = asyncio.Queue(loop=loop)
+    # loop.create_task(utils.wait_for_notify(table_name, notification_queue))
+    # loop.run_until_complete(utils.shutdown(notification_queue))
+    # loop.run_forever()
+
 
 script.add_command(run)
 script.add_command(create_table)

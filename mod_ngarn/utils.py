@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 import sys
+from datetime import datetime, timedelta
 from inspect import getmembers, getmodule, ismethod
 from typing import Callable, Union
 
@@ -90,14 +91,13 @@ async def create_table(name: str):
 
         await cnx.execute(
             """CREATE TABLE IF NOT EXISTS {queue_table}_error (
-                    id serial,
-                    job_id TEXT NOT NULL CHECK (job_id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
+                    id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
                     fn_name TEXT NOT NULL,
                     args JSON DEFAULT '[]',
                     kwargs JSON DEFAULT '{{}}',
                     message TEXT NOT NULL,
                     created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                    PRIMARY KEY (id)
+                    PRIMARY KEY (id, created)
                 );
             """.format(
                 queue_table=name
@@ -148,10 +148,31 @@ async def shutdown(q: asyncio.Queue):
     sys.exit()
 
 
-async def delete_executed_job(queue_table: str) -> str:
-    cnx = await get_connection()
+async def delete_executed_job(cnx: Connection, queue_table: str) -> str:
     return await cnx.execute(
             """DELETE from {queue_table} where executed is not null""".format(
                 queue_table=queue_table
             )
         )
+
+async def delete_controller(queue_table: str, scheduled_time: int = 0) -> None:
+    cnx = await get_connection()
+    async with cnx.transaction():
+        await delete_executed_job(cnx, queue_table)
+        if scheduled_time:
+            # scheduled_time = 'days=0, seconds=0, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0'.format()
+            print("before")
+            import pdb; pdb.set_trace()
+            await cnx.execute(
+                """UPDATE {queue_table} SET scheduled=$1, executed=NULL WHERE id = $2;""".format(
+                    queue_table=queue_table
+                ), datetime.now() + timedelta(scheduled_time), 'delete_executed_task'
+            )
+            print("after")
+
+async def add_delete_job(cnx: Connection, queue_table: str, scheduled_time: int = 0) -> str:
+    return await cnx.execute(
+            """INSERT INTO {queue_table} (id, fn_name, priority, args) VALUES ($1, $2, $3, $4)""".format(
+                queue_table=queue_table
+        ), 'delete_executed_task', await get_fn_name(delete_controller), 1, [queue_table, scheduled_time]
+    )

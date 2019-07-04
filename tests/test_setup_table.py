@@ -34,15 +34,13 @@ async def test_can_create_log_table_when_create_table():
     table_name = "modngarn_job"
     log_table_name = f"{table_name}_error"
 
-    try:
-        await cnx.execute(f"TRUNCATE TABLE {table_name};")
-        await cnx.execute(f"TRUNCATE TABLE {log_table_name};")
-    except:
-        pass
+    await create_table(table_name)
+    await cnx.execute(f"TRUNCATE TABLE {table_name};")
+    await cnx.execute(f"TRUNCATE TABLE {log_table_name};")
 
     await create_table(table_name)
     insert_query = """
-        INSERT INTO "{log_table_name}" (job_id, fn_name, args, kwargs, message, created)
+        INSERT INTO "{log_table_name}" (id, fn_name, args, kwargs, message, created)
         VALUES
             ('job-1', 'asycio.sleep', '[2]', '{{}}', 'error occur', '2017-08-10'),
             ('job-2', 'asycio.sleep', '[2]', '{{}}', 'error occur', '2018-09-13'),
@@ -65,13 +63,10 @@ async def test_keep_log_in_log_table_when_task_failed():
     table_name = "modngarn_job"
     log_table_name = f"{table_name}_error"
 
-    try:
-        await cnx.execute(f"TRUNCATE TABLE {table_name};")
-        await cnx.execute(f"TRUNCATE TABLE {log_table_name};")
-    except:
-        pass
-
     await create_table(table_name)
+    await cnx.execute(f"TRUNCATE TABLE {table_name};")
+    await cnx.execute(f"TRUNCATE TABLE {log_table_name};")
+
     await insert_job(cnx, table_name, "job-1", "asyncio.sleep", datetime.now())
     await insert_job(cnx, table_name, "job-2", "asyncio.sleep", datetime.now())
     await insert_job(cnx, table_name, "job-3", "tests.utils.async_error_job", None)

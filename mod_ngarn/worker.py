@@ -80,7 +80,7 @@ class Job:
 
         error_log_table = f"{self.table}_error"
         await self.cnx.execute(
-            f"INSERT INTO {error_log_table} (job_id, fn_name, args, kwargs, message) VALUES ($1, $2, $3, $4, $5)",
+            f"INSERT INTO {error_log_table} (id, fn_name, args, kwargs, message) VALUES ($1, $2, $3, $4, $5)",
             self.id,
             self.fn_name,
             self.args,
