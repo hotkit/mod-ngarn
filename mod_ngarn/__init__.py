@@ -14,7 +14,7 @@ from .worker import JobRunner
 global script
 global run
 global create_table
-
+global delete_job
 
 @click.group()
 def script():
@@ -76,17 +76,12 @@ def wait_for_notify(queue_table):
     help='Queue table name (Default: os.getenv("DBTABLE", "public.modngarn_job"))',
     default=os.getenv("DBTABLE", "public.modngarn_job"),
 )
-def add_delete_job(queue_table):
-    return "test"
-    # "Wait and listening for NOTIFY"
-    # table_name = utils.sql_table_name(queue_table)
-    # loop = asyncio.get_event_loop()
-    # notification_queue = asyncio.Queue(loop=loop)
-    # loop.create_task(utils.wait_for_notify(table_name, notification_queue))
-    # loop.run_until_complete(utils.shutdown(notification_queue))
-    # loop.run_forever()
-
+def delete_job(queue_table):
+    """Delete executed task"""
+    table_name = utils.sql_table_name(queue_table)
+    asyncio.run(utils.delete_executed_job(table_name))
 
 script.add_command(run)
 script.add_command(create_table)
 script.add_command(wait_for_notify)
+script.add_command(delete_job)
