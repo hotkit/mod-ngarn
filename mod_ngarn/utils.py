@@ -89,6 +89,22 @@ async def create_table(name: str):
         )
 
         await cnx.execute(
+            """CREATE TABLE IF NOT EXISTS {queue_table}_error (
+                    id serial,
+                    job_id TEXT NOT NULL CHECK (job_id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
+                    fn_name TEXT NOT NULL,
+                    args JSON DEFAULT '[]',
+                    kwargs JSON DEFAULT '{{}}',
+                    message TEXT NOT NULL,
+                    created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    PRIMARY KEY (id)
+                );
+            """.format(
+                queue_table=name
+            )
+        )
+
+        await cnx.execute(
             f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON {name} (executed) WHERE executed IS NULL;"""
         )
 
@@ -113,7 +129,6 @@ async def create_table(name: str):
         )
     print(f"Done")
 
-
 async def wait_for_notify(queue_table: str, q: asyncio.Queue):
     """ Wait for notification and put channel to the Queue """
     notify_ch = notify_channel(queue_table)
@@ -131,3 +146,12 @@ async def shutdown(q: asyncio.Queue):
     """ Gracefully shutdown when something put to the Queue """
     await q.get()
     sys.exit()
+
+
+async def delete_executed_job(queue_table: str) -> str:
+    cnx = await get_connection()
+    return await cnx.execute(
+            """DELETE from {queue_table} where executed is not null""".format(
+                queue_table=queue_table
+            )
+        )

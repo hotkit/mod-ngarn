@@ -77,6 +77,17 @@ class Job:
                 delay, next_schedule.isoformat()
             )
         )
+
+        error_log_table = f"{self.table}_error"
+        await self.cnx.execute(
+            f"INSERT INTO {error_log_table} (job_id, fn_name, args, kwargs, message) VALUES ($1, $2, $3, $4, $5)",
+            self.id,
+            self.fn_name,
+            self.args,
+            self.kwargs,
+            error
+        )
+
         return await self.cnx.execute(
             f"UPDATE {self.table} SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1",
             self.id,
