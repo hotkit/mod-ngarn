@@ -150,7 +150,7 @@ async def shutdown(q: asyncio.Queue):
 
 
 async def delete_executed_job(queue_table: str) -> str:
-    "Delete executed Job"
+    """ Delete executed Job """
     cnx = await get_connection()
     return await cnx.execute(
             """DELETE from {queue_table} where executed is not null""".format(
