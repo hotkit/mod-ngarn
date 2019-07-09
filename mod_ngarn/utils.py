@@ -96,8 +96,9 @@ async def create_table(name: str):
                     args JSON DEFAULT '[]',
                     kwargs JSON DEFAULT '{{}}',
                     message TEXT NOT NULL,
-                    created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                    PRIMARY KEY (id, created)
+                    posted TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    processed_time TEXT,
+                    PRIMARY KEY (id, posted)
                 );
             """.format(
                 queue_table=name

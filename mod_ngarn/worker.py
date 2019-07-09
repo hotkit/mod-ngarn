@@ -38,8 +38,9 @@ class Job:
 
     async def execute(self) -> Any:
         """ Execute the transaction """
+        start_time = time.time()
         try:
-            start_time = time.time()
+
             func = await import_fn(self.fn_name)
             if asyncio.iscoroutinefunction(func):
                 result = await func(*self.args, **self.kwargs)
@@ -57,7 +58,10 @@ class Job:
             stack_trace = traceback.format_exc()
             error_msg = "{}\n{}".format(e.__repr__(), stack_trace)
             log.error("Error#{}, {}".format(self.id, error_msg))
-            await self.failed(error_msg)
+            processing_time = str(
+                Decimal(str(time.time() - start_time)).quantize(Decimal(".001"))
+            )
+            await self.failed(error_msg, processing_time)
 
     async def success(self, result: Dict, processing_time: Decimal) -> str:
         """ Success execution handler """
@@ -68,7 +72,7 @@ class Job:
             self.id,
         )
 
-    async def failed(self, error: str) -> str:
+    async def failed(self, error: str, processing_time: Decimal) -> str:
         """ Failed execution handler """
         delay = await self.delay()
         next_schedule = datetime.now(timezone.utc) + timedelta(seconds=delay)
@@ -80,12 +84,13 @@ class Job:
 
         error_log_table = f"{self.table}_error"
         await self.cnx.execute(
-            f"INSERT INTO {error_log_table} (id, fn_name, args, kwargs, message) VALUES ($1, $2, $3, $4, $5)",
+            f"INSERT INTO {error_log_table} (id, fn_name, args, kwargs, message, processed_time) VALUES ($1, $2, $3, $4, $5, $6)",
             self.id,
             self.fn_name,
             self.args,
             self.kwargs,
-            error
+            error,
+            processing_time
         )
 
         return await self.cnx.execute(

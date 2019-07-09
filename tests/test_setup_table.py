@@ -40,7 +40,7 @@ async def test_can_create_log_table_when_create_table():
 
     await create_table(table_name)
     insert_query = """
-        INSERT INTO "{log_table_name}" (id, fn_name, args, kwargs, message, created)
+        INSERT INTO "{log_table_name}" (id, fn_name, args, kwargs, message, posted)
         VALUES
             ('job-1', 'asycio.sleep', '[2]', '{{}}', 'error occur', '2017-08-10'),
             ('job-2', 'asycio.sleep', '[2]', '{{}}', 'error occur', '2018-09-13'),
@@ -78,6 +78,8 @@ async def test_keep_log_in_log_table_when_task_failed():
         """SELECT * FROM {log_table_name}""".format(log_table_name=log_table_name)
     )
     assert len(jobs) == 1
+    assert jobs[0]["processed_time"]
+    assert jobs[0]["posted"]
 
     # Keep ervery time error happen event it come from same task
     await cnx.fetch(
