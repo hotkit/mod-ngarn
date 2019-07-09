@@ -7,12 +7,13 @@ name = "pypi"
 asyncpg = "==0.17.0"
 tormor = "==1.1"
 click = "*"
+e1839a8 = {editable = true,path = "."}
 
 [dev-packages]
 pylint = "*"
 ipdb = "*"
 flit = "*"
-black = "*"
+black = "==19.3b0"
 coverage = "==4.5.1"
 pyre-check = "==0.0.16"
 pytest = "==3.6.3"
