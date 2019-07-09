@@ -34,7 +34,7 @@ def script():
     help="Max delay for failed jobs (seconds) (Default: None)",
 )
 def run(queue_table, limit, max_delay):
-    "Run mod-ngarn job"
+    """Run mod-ngarn job"""
     table_name = utils.sql_table_name(queue_table)
     job_runner = JobRunner()
     loop = asyncio.get_event_loop()
@@ -50,7 +50,7 @@ def run(queue_table, limit, max_delay):
     default=os.getenv("DBTABLE", "public.modngarn_job"),
 )
 def create_table(queue_table):
-    "Create mod-ngarn queue table"
+    """Create mod-ngarn queue table"""
     table_name = utils.sql_table_name(queue_table)
     asyncio.run(utils.create_table(table_name))
 
@@ -62,7 +62,7 @@ def create_table(queue_table):
     default=os.getenv("DBTABLE", "public.modngarn_job"),
 )
 def wait_for_notify(queue_table):
-    "Wait and listening for NOTIFY"
+    """Wait and listening for NOTIFY"""
     table_name = utils.sql_table_name(queue_table)
     loop = asyncio.get_event_loop()
     notification_queue = asyncio.Queue(loop=loop)
