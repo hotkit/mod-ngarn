@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 import sys
+from datetime import datetime, timedelta
 from inspect import getmembers, getmodule, ismethod
 from typing import Callable, Union
 
@@ -89,6 +90,22 @@ async def create_table(name: str):
         )
 
         await cnx.execute(
+            """CREATE TABLE IF NOT EXISTS {queue_table}_error (
+                    id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
+                    fn_name TEXT NOT NULL,
+                    args JSON DEFAULT '[]',
+                    kwargs JSON DEFAULT '{{}}',
+                    message TEXT NOT NULL,
+                    posted TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    processed_time TEXT,
+                    PRIMARY KEY (id, posted)
+                );
+            """.format(
+                queue_table=name
+            )
+        )
+
+        await cnx.execute(
             f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON {name} (executed) WHERE executed IS NULL;"""
         )
 
@@ -113,7 +130,6 @@ async def create_table(name: str):
         )
     print(f"Done")
 
-
 async def wait_for_notify(queue_table: str, q: asyncio.Queue):
     """ Wait for notification and put channel to the Queue """
     notify_ch = notify_channel(queue_table)
@@ -131,3 +147,13 @@ async def shutdown(q: asyncio.Queue):
     """ Gracefully shutdown when something put to the Queue """
     await q.get()
     sys.exit()
+
+
+async def delete_executed_job(queue_table: str) -> str:
+    """ Delete executed Job """
+    cnx = await get_connection()
+    return await cnx.execute(
+            """DELETE from {queue_table} where executed is not null""".format(
+                queue_table=queue_table
+            )
+        )
