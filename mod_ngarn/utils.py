@@ -63,12 +63,29 @@ async def import_fn(fn_name) -> Callable:
         raise ImportNotFoundException(e)
 
 
+async def is_table_exists(name: str) -> bool: 
+    cnx = await get_connection()
+    schema_query = "schemaname || '.' ||" if len(name.split('.')) == 2 else ""
+    return await cnx.fetchval(
+        """SELECT EXISTS (SELECT 1 FROM pg_tables 
+            WHERE {schema_query} tablename = '{queue_table}');
+        """.format(
+            schema_query=schema_query,
+            queue_table=name.replace('"', '')
+        )
+    )
+      
+
 async def create_table(name: str):
     print(f"Creating table {name}...")
     cnx = await get_connection()
-    async with cnx.transaction():
+    async with cnx.transaction():        
+        if await is_table_exists(name):
+            print("Table {queue_table} alrady exsits skipped".format(queue_table=name))
+            return None
+
         await cnx.execute(
-            """CREATE TABLE IF NOT EXISTS {queue_table} (
+            """CREATE TABLE {queue_table} (
                     id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
                     fn_name TEXT NOT NULL,
                     args JSON DEFAULT '[]',

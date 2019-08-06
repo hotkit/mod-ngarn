@@ -25,3 +25,23 @@ async def test_can_create_table_and_fetch_job_with_specific_name():
     assert job.id == 'job-3'
     await cnx.execute(f'TRUNCATE TABLE {table_name};')
     await cnx.close()
+
+
+@pytest.mark.asyncio
+async def test_can_skipped_create_table_process_when_table_exists():
+    cnx = await get_connection()
+    table_name = 'test_init_table'
+    await create_table(table_name)
+    await create_table(table_name)
+    await cnx.execute(f'TRUNCATE TABLE {table_name};')
+    await cnx.close()
+
+
+@pytest.mark.asyncio
+async def test_can_skipped_create_table_process_when_table_exists():
+    cnx = await get_connection()
+    table_name = 'test_init_table'
+    await create_table(table_name)
+    await create_table(table_name)
+    await cnx.execute(f'TRUNCATE TABLE {table_name};')
+    await cnx.close()
