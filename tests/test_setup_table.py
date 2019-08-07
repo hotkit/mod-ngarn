@@ -155,7 +155,7 @@ async def test_keep_log_in_log_table_when_task_failed():
 @pytest.mark.asyncio
 async def test_can_skipped_create_table_process_when_table_exists():
     cnx = await get_connection()
-    table_name = 'public.test_init_table'
+    table_name = "public.test_init_table"
     await create_table(table_name)
     await create_table(table_name)
     await cnx.execute(f"DROP TABLE {table_name};")

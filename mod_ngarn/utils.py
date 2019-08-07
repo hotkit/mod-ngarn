@@ -22,9 +22,12 @@ class ModuleNotfoundException(Exception):
 
 def sql_table_name(queue_table: str) -> str:
     quote_table_name = [f'"{x}"' for x in queue_table.replace('"', "").split(".")]
-    if len(quote_table_name) == 1:
-        quote_table_name.insert(0, '"public"')
-    return (".").join(quote_table_name)
+    table_name = (
+        ['"public"'] + quote_table_name
+        if len(quote_table_name) == 1
+        else quote_table_name
+    )
+    return (".").join(table_name)
 
 
 def notify_channel(queue_table: str) -> str:
@@ -149,14 +152,16 @@ async def create_table(name: str):
     cnx = await get_connection()
     async with cnx.transaction():
         if await is_table_exists(name):
-            print("Table {queue_table} alrady exsits skipped".format(queue_table=name))
+            print(
+                "Table {queue_table} already exists, skipped".format(queue_table=name)
+            )
         else:
             await exec_create_table(cnx, name)
 
         log_table_name = sql_table_name(name.replace('"', "") + "_error")
         if await is_table_exists(log_table_name):
             print(
-                "Table {queue_table} alrady exsits skipped".format(
+                "Table {queue_table} already exists, skipped".format(
                     queue_table=log_table_name
                 )
             )
