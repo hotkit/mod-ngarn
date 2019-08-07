@@ -83,14 +83,13 @@ done
 
 ## Dev
 ### Required
-- pipenv (https://github.com/pypa/pipenv)
+- flit (https://pypi.org/project/flit/)
 - running PostgreSQL (`psql` should work)
 - python 3.7
 
 #### Setup
 ```
-pipenv install --python 3.7
-pipenv shell
+flit install
 ```
 
 #### Runtests

@@ -9,55 +9,57 @@ from mod_ngarn.utils import create_table
 
 @pytest.mark.asyncio
 async def test_add_job_should_return_inserted_record():
-    queue_table = 'public.modngarn_job'
+    queue_table = "public.modngarn_job"
     await create_table(queue_table)
     cnx = await get_connection()
-    job_id = 'job-1'
-    fn_name = 'fn_name'
-    args = ['a', 'b']
-    kwargs = {'a': '1', 'b': '2'}
+    job_id = "job-1"
+    fn_name = "fn_name"
+    args = ["a", "b"]
+    kwargs = {"a": "1", "b": "2"}
     res = await add_job(cnx, queue_table, job_id, fn_name, kwargs=kwargs, args=args)
 
-    assert res['id'] == job_id
-    assert res['fn_name'] == fn_name
-    assert res['args'] == args
-    assert res['kwargs'] == kwargs
-    assert res['priority'] == 0
+    assert res["id"] == job_id
+    assert res["fn_name"] == fn_name
+    assert res["args"] == args
+    assert res["kwargs"] == kwargs
+    assert res["priority"] == 0
 
-    await cnx.execute(f'TRUNCATE TABLE {queue_table};')
+    await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.close()
 
 
 @pytest.mark.asyncio
 async def test_add_job_with_only_fn_name_should_store_empty_args_and_kwargs():
-    queue_table = 'public.modngarn_job'
+    queue_table = "public.modngarn_job"
     await create_table(queue_table)
     cnx = await get_connection()
-    job_id = 'job-1'
-    fn_name = 'fn_name'
+    job_id = "job-1"
+    fn_name = "fn_name"
     await add_job(cnx, queue_table, job_id, fn_name)
 
-    res = await cnx.fetchrow(f'SELECT id, fn_name, args, kwargs, priority FROM {queue_table}')
+    res = await cnx.fetchrow(
+        f"SELECT id, fn_name, args, kwargs, priority FROM {queue_table}"
+    )
 
-    assert res['id'] == job_id
-    assert res['fn_name'] == fn_name
-    assert res['args'] == []
-    assert res['kwargs'] == {}
-    assert res['priority'] == 0
+    assert res["id"] == job_id
+    assert res["fn_name"] == fn_name
+    assert res["args"] == []
+    assert res["kwargs"] == {}
+    assert res["priority"] == 0
 
-    await cnx.execute(f'TRUNCATE TABLE {queue_table};')
+    await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.close()
 
 
 @pytest.mark.asyncio
 async def test_add_job_should_store_all_of_parameter_as_input():
-    queue_table = 'public.modngarn_job'
+    queue_table = "public.modngarn_job"
     await create_table(queue_table)
     cnx = await get_connection()
-    job_id = 'job-1'
-    fn_name = 'fn_name'
-    args = ['a', 'b']
-    kwargs = {'a': '1', 'b': '2'}
+    job_id = "job-1"
+    fn_name = "fn_name"
+    args = ["a", "b"]
+    kwargs = {"a": "1", "b": "2"}
     priority = 3
     schedule_time = datetime(2018, 1, 2, 0, 0, tzinfo=timezone.utc)
 
@@ -73,17 +75,17 @@ async def test_add_job_should_store_all_of_parameter_as_input():
     )
 
     res = await cnx.fetchrow(
-        f'SELECT id, fn_name, args, kwargs, priority, scheduled FROM {queue_table}'
+        f"SELECT id, fn_name, args, kwargs, priority, scheduled FROM {queue_table}"
     )
 
-    assert res['id'] == job_id
-    assert res['fn_name'] == fn_name
-    assert res['args'] == args
-    assert res['kwargs'] == kwargs
-    assert res['priority'] == priority
-    assert res['scheduled'] == schedule_time
+    assert res["id"] == job_id
+    assert res["fn_name"] == fn_name
+    assert res["args"] == args
+    assert res["kwargs"] == kwargs
+    assert res["priority"] == priority
+    assert res["scheduled"] == schedule_time
 
-    await cnx.execute(f'TRUNCATE TABLE {queue_table};')
+    await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.close()
 
 
@@ -93,20 +95,22 @@ async def async_sum(first, second):
 
 @pytest.mark.asyncio
 async def test_add_job_should_convert_callable_to_string_function_name():
-    queue_table = 'public.modngarn_job'
+    queue_table = "public.modngarn_job"
     await create_table(queue_table)
     cnx = await get_connection()
-    job_id = 'job-1'
+    job_id = "job-1"
     fn_name = async_sum
     await add_job(cnx, queue_table, job_id, fn_name)
 
-    res = await cnx.fetchrow(f'SELECT id, fn_name, args, kwargs, priority FROM {queue_table}')
+    res = await cnx.fetchrow(
+        f"SELECT id, fn_name, args, kwargs, priority FROM {queue_table}"
+    )
 
-    assert res['id'] == job_id
-    assert res['fn_name'] == 'tests.test_api.async_sum'
-    assert res['args'] == []
-    assert res['kwargs'] == {}
-    assert res['priority'] == 0
+    assert res["id"] == job_id
+    assert res["fn_name"] == "tests.test_api.async_sum"
+    assert res["args"] == []
+    assert res["kwargs"] == {}
+    assert res["priority"] == 0
 
-    await cnx.execute(f'TRUNCATE TABLE {queue_table};')
+    await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.close()

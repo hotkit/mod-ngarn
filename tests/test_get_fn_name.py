@@ -18,19 +18,19 @@ def sync_sum(first, second):
 @pytest.mark.asyncio
 async def test_get_fn_name_with_async_callable_should_return_string():
     res = await get_fn_name(async_sum)
-    assert res == 'tests.test_get_fn_name.async_sum'
+    assert res == "tests.test_get_fn_name.async_sum"
 
 
 @pytest.mark.asyncio
 async def test_get_fn_name_with_sync_callable_should_return_string():
     res = await get_fn_name(sync_sum)
-    assert res == 'tests.test_get_fn_name.sync_sum'
+    assert res == "tests.test_get_fn_name.sync_sum"
 
 
 @pytest.mark.asyncio
 async def test_get_fn_name_with_string_should_return_string_same_as_input():
-    res = await get_fn_name('sum_func')
-    assert res == 'sum_func'
+    res = await get_fn_name("sum_func")
+    assert res == "sum_func"
 
 
 @pytest.mark.asyncio
