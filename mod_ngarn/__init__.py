@@ -16,6 +16,7 @@ global run
 global create_table
 global delete_job
 
+
 @click.group()
 def script():
     pass
@@ -70,6 +71,7 @@ def wait_for_notify(queue_table):
     loop.run_until_complete(utils.shutdown(notification_queue))
     loop.run_forever()
 
+
 @click.command()
 @click.option(
     "--queue-table",
@@ -80,6 +82,7 @@ def delete_job(queue_table):
     """Delete executed task"""
     table_name = utils.sql_table_name(queue_table)
     asyncio.run(utils.delete_executed_job(table_name))
+
 
 script.add_command(run)
 script.add_command(create_table)

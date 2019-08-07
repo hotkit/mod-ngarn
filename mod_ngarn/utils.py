@@ -1,4 +1,5 @@
 import asyncio
+import asyncpg
 import os
 import re
 import sys
@@ -20,7 +21,10 @@ class ModuleNotfoundException(Exception):
 
 
 def sql_table_name(queue_table: str) -> str:
-    return (".").join([f'"{x}"' for x in queue_table.replace('"', "").split(".")])
+    quote_table_name = [f'"{x}"' for x in queue_table.replace('"', "").split(".")]
+    if len(quote_table_name) == 1:
+        quote_table_name.insert(0, '"public"')
+    return (".").join(quote_table_name)
 
 
 def notify_channel(queue_table: str) -> str:
@@ -64,88 +68,103 @@ async def import_fn(fn_name) -> Callable:
         raise ImportNotFoundException(e)
 
 
-async def is_table_exists(name: str) -> bool: 
+async def is_table_exists(name: str) -> bool:
     cnx = await get_connection()
-    schema_query = "schemaname || '.' ||" if len(name.split('.')) == 2 else ""
     return await cnx.fetchval(
         """SELECT EXISTS (SELECT 1 FROM pg_tables 
-            WHERE {schema_query} tablename = '{queue_table}');
+            WHERE schemaname || '.' || tablename = '{queue_table}');
         """.format(
-            schema_query=schema_query,
-            queue_table=name.replace('"', '')
+            queue_table=name.replace('"', "")
         )
     )
-      
+
+
+async def exec_create_table(cnx: asyncpg.connection, name: str):
+    await cnx.execute(
+        """CREATE TABLE {queue_table} (
+                id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
+                fn_name TEXT NOT NULL,
+                args JSON DEFAULT '[]',
+                kwargs JSON DEFAULT '{{}}',
+                priority INTEGER DEFAULT 0,
+                created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                scheduled TIMESTAMP WITH TIME ZONE,
+                executed TIMESTAMP WITH TIME ZONE,
+                canceled TIMESTAMP WITH TIME ZONE,
+                result JSON,
+                reason TEXT,
+                processed_time TEXT,
+                PRIMARY KEY (id)
+            );
+        """.format(
+            queue_table=name
+        )
+    )
+
+    await cnx.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON {name} (executed) WHERE executed IS NULL;"""
+    )
+
+    await cnx.execute(
+        """
+    CREATE OR REPLACE FUNCTION {notify_channel}_notify_job()
+    RETURNS TRIGGER LANGUAGE plpgsql AS $$
+    BEGIN
+        NOTIFY {notify_channel};
+        RETURN NEW;
+    END;
+    $$;
+
+    DROP TRIGGER IF EXISTS {notify_channel}_notify_job_inserted ON {table_name};
+    CREATE TRIGGER {notify_channel}_notify_job_inserted
+    AFTER INSERT ON {table_name}
+    FOR EACH ROW
+    EXECUTE PROCEDURE {notify_channel}_notify_job();
+    """.format(
+            notify_channel=notify_channel(name), table_name=name
+        )
+    )
+
+
+async def exec_create_log_table(cnx: asyncpg.connection, name: str):
+    await cnx.execute(
+        """CREATE TABLE IF NOT EXISTS {queue_table} (
+                id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
+                fn_name TEXT NOT NULL,
+                args JSON DEFAULT '[]',
+                kwargs JSON DEFAULT '{{}}',
+                message TEXT NOT NULL,
+                posted TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                processed_time TEXT,
+                PRIMARY KEY (id, posted)
+            );
+        """.format(
+            queue_table=name
+        )
+    )
+
 
 async def create_table(name: str):
     print(f"Creating table {name}...")
     cnx = await get_connection()
-    async with cnx.transaction():        
+    async with cnx.transaction():
         if await is_table_exists(name):
             print("Table {queue_table} alrady exsits skipped".format(queue_table=name))
-            return None
+        else:
+            await exec_create_table(cnx, name)
 
-        await cnx.execute(
-            """CREATE TABLE {queue_table} (
-                    id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
-                    fn_name TEXT NOT NULL,
-                    args JSON DEFAULT '[]',
-                    kwargs JSON DEFAULT '{{}}',
-                    priority INTEGER DEFAULT 0,
-                    created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                    scheduled TIMESTAMP WITH TIME ZONE,
-                    executed TIMESTAMP WITH TIME ZONE,
-                    canceled TIMESTAMP WITH TIME ZONE,
-                    result JSON,
-                    reason TEXT,
-                    processed_time TEXT,
-                    PRIMARY KEY (id)
-                );
-            """.format(
-                queue_table=name
+        log_table_name = sql_table_name(name.replace('"', "") + "_error")
+        if await is_table_exists(log_table_name):
+            print(
+                "Table {queue_table} alrady exsits skipped".format(
+                    queue_table=log_table_name
+                )
             )
-        )
+        else:
+            await exec_create_log_table(cnx, log_table_name)
 
-        await cnx.execute(
-            """CREATE TABLE IF NOT EXISTS {queue_table}_error (
-                    id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
-                    fn_name TEXT NOT NULL,
-                    args JSON DEFAULT '[]',
-                    kwargs JSON DEFAULT '{{}}',
-                    message TEXT NOT NULL,
-                    posted TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                    processed_time TEXT,
-                    PRIMARY KEY (id, posted)
-                );
-            """.format(
-                queue_table=name
-            )
-        )
-
-        await cnx.execute(
-            f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON {name} (executed) WHERE executed IS NULL;"""
-        )
-
-        await cnx.execute(
-            """
-        CREATE OR REPLACE FUNCTION {notify_channel}_notify_job()
-        RETURNS TRIGGER LANGUAGE plpgsql AS $$
-        BEGIN
-            NOTIFY {notify_channel};
-            RETURN NEW;
-        END;
-        $$;
-
-        DROP TRIGGER IF EXISTS {notify_channel}_notify_job_inserted ON {table_name};
-        CREATE TRIGGER {notify_channel}_notify_job_inserted
-        AFTER INSERT ON {table_name}
-        FOR EACH ROW
-        EXECUTE PROCEDURE {notify_channel}_notify_job();
-        """.format(
-                notify_channel=notify_channel(name), table_name=name
-            )
-        )
     print(f"Done")
+
 
 async def wait_for_notify(queue_table: str, q: asyncio.Queue):
     """ Wait for notification and put channel to the Queue """
@@ -170,7 +189,7 @@ async def delete_executed_job(queue_table: str) -> str:
     """ Delete executed Job """
     cnx = await get_connection()
     return await cnx.execute(
-            """DELETE from {queue_table} where executed is not null""".format(
-                queue_table=queue_table
-            )
+        """DELETE from {queue_table} where executed is not null""".format(
+            queue_table=queue_table
         )
+    )

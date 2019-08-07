@@ -25,14 +25,14 @@ async def test_import_fn_can_import_builtin_fn():
 @pytest.mark.asyncio
 async def test_import_fn_can_import_sync_fn():
     r = await import_fn("tests.test_import_fn.sync_ret")
-    res = r('Hello')
+    res = r("Hello")
     assert res == "Hello"
 
 
 @pytest.mark.asyncio
 async def test_import_fn_can_import_async_fn():
     r = await import_fn("tests.test_import_fn.async_ret")
-    res = await r('Hello')
+    res = await r("Hello")
     assert res == "Hello"
 
 

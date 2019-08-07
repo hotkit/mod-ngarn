@@ -25,7 +25,7 @@ def raise_dummy_job():
 
 @pytest.mark.asyncio
 async def test_job_execute_builtin_success():
-    await create_table("public.modngarn_job")
+    await create_table('"public"."modngarn_job"')
     cnx = await get_connection()
     job = Job(cnx, "modngarn_job", "job-1", "sum", 1, [[1, 2]], {})
     result = await job.execute()
@@ -35,7 +35,7 @@ async def test_job_execute_builtin_success():
 
 @pytest.mark.asyncio
 async def test_job_execute_sync_fn_success():
-    await create_table("public.modngarn_job")
+    await create_table('"public"."modngarn_job"')
     cnx = await get_connection()
     job = Job(
         cnx, "modngarn_job", "job-1", "tests.test_job.sync_dummy_job", 1, ["hello"], {}
@@ -47,7 +47,7 @@ async def test_job_execute_sync_fn_success():
 
 @pytest.mark.asyncio
 async def test_job_execute_async_fn_success():
-    await create_table("public.modngarn_job")
+    await create_table('"public"."modngarn_job"')
     cnx = await get_connection()
     job = Job(
         cnx, "modngarn_job", "job-1", "tests.test_job.async_dummy_job", 1, ["hello"], {}

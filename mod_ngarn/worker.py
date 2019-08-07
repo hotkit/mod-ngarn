@@ -90,7 +90,7 @@ class Job:
             self.args,
             self.kwargs,
             error,
-            processing_time
+            processing_time,
         )
 
         return await self.cnx.execute(
