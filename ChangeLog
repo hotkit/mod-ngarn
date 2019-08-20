@@ -1,10 +1,11 @@
 [[RELEASED 3.3]]
 
-2019-07-09  Sem  <pumidon@hot-now.com>
- Changed: Automatically create log table when create table and support keep error log.
 2019-08-07  Sukit <sukit_owl@hotmail.com>
  Changed: Auto use schema "public" when queue-table has only name
  Fixed: Create table serialization lock
+ 
+2019-07-09  Sem  <pumidon@hot-now.com>
+ Changed: Automatically create log table when create table and support keep error log.
 
 [[RELEASED 3.2]]
 
