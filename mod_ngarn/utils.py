@@ -110,19 +110,19 @@ async def exec_create_table(cnx: asyncpg.connection, name: str):
 
     await cnx.execute(
         """
-    CREATE OR REPLACE FUNCTION {notify_channel}_notify_job()
+    CREATE OR REPLACE FUNCTION "{notify_channel}_notify_job"()
     RETURNS TRIGGER LANGUAGE plpgsql AS $$
     BEGIN
-        NOTIFY {notify_channel};
+        NOTIFY "{notify_channel}";
         RETURN NEW;
     END;
     $$;
 
-    DROP TRIGGER IF EXISTS {notify_channel}_notify_job_inserted ON {table_name};
-    CREATE TRIGGER {notify_channel}_notify_job_inserted
+    DROP TRIGGER IF EXISTS "{notify_channel}_notify_job_inserted" ON {table_name};
+    CREATE TRIGGER "{notify_channel}_notify_job_inserted"
     AFTER INSERT ON {table_name}
     FOR EACH ROW
-    EXECUTE PROCEDURE {notify_channel}_notify_job();
+    EXECUTE PROCEDURE "{notify_channel}_notify_job"();
     """.format(
             notify_channel=notify_channel(name), table_name=name
         )

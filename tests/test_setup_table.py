@@ -53,6 +53,28 @@ async def test_can_exec_create_table_and_fetch_job_with_specific_name():
 
 
 @pytest.mark.asyncio
+async def test_can_exec_create_table_and_fetch_job_with_specific_special_character_name():
+    cnx = await get_connection()
+    table_name = '"public"."modngarn/_job"'
+    await exec_create_table(cnx, table_name)
+    insert_query = """
+        INSERT INTO {table_name} (id, fn_name, priority, args, kwargs, scheduled, executed)
+        VALUES
+            ('job-1', 'asycio.sleep', 1, '[2]', '{{}}', NULL, '2018-08-10'),
+            ('job-2', 'asycio.sleep', 2, '[2]', '{{}}', NULL, '2018-08-13'),
+            ('job-3', 'asycio.sleep', 3, '[2]', '{{}}', NULL, NULL);
+    """.format(
+        table_name=table_name
+    )
+    await cnx.execute(insert_query)
+    job_runner = JobRunner()
+    job = await job_runner.fetch_job(cnx, table_name, None)
+    assert job.id == "job-3"
+    await cnx.execute(f"DROP TABLE {table_name};")
+    await cnx.close()
+
+
+@pytest.mark.asyncio
 async def test_can_create_log_table_when_create_table():
     cnx = await get_connection()
     table_name = "public.modngarn_job"
@@ -113,8 +135,8 @@ async def test_can_exec_create_log_table_when_create_table():
 @pytest.mark.asyncio
 async def test_keep_log_in_log_table_when_task_failed():
     cnx = await get_connection()
-    table_name = "public.modngarn_job"
-    log_table_name = f"{table_name}_error"
+    table_name = '"public"."modngarn_job"'
+    log_table_name = f'"public"."modngarn_job_error"'
 
     await create_table(table_name)
     await cnx.execute(f"TRUNCATE TABLE {table_name};")
@@ -148,7 +170,7 @@ async def test_keep_log_in_log_table_when_task_failed():
 
     await cnx.execute(f"TRUNCATE TABLE {log_table_name};")
     await cnx.execute(f"DROP TABLE {table_name};")
-    await cnx.execute(f"DROP TABLE {table_name}_error;")
+    await cnx.execute(f"DROP TABLE {log_table_name};")
     await cnx.close()
 
 
