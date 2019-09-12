@@ -10,7 +10,7 @@ home-page = "https://github.com/Proteus-tech/mod-ngarn"
 classifiers = ["License :: OSI Approved :: MIT License"]
 description-file = "README.md"
 requires = [
-    "asyncpg==0.17.0",
+    "asyncpg==0.18.3",
     "Click==7.0"
 ]
 requires-python = "~=3.6"
