@@ -36,12 +36,12 @@ def script():
 )
 def run(queue_table, limit, max_delay):
     """Run mod-ngarn job"""
-    table_name = utils.sql_table_name(queue_table)
+    queue_table_schema, queue_table_name = queue_table.splt(".")
     job_runner = JobRunner()
     loop = asyncio.get_event_loop()
     if max_delay:
         max_delay = float(max_delay)
-    loop.run_until_complete(job_runner.run(table_name, limit, max_delay))
+    loop.run_until_complete(job_runner.run(queue_table_schema, queue_table_name, limit, max_delay))
 
 
 @click.command()
@@ -52,8 +52,8 @@ def run(queue_table, limit, max_delay):
 )
 def create_table(queue_table):
     """Create mod-ngarn queue table"""
-    table_name = utils.sql_table_name(queue_table)
-    asyncio.run(utils.create_table(table_name))
+    queue_table_schema, queue_table_name = queue_table.splt(".")
+    asyncio.run(utils.create_table(queue_table_schema, queue_table_name))
 
 
 @click.command()
@@ -64,10 +64,10 @@ def create_table(queue_table):
 )
 def wait_for_notify(queue_table):
     """Wait and listening for NOTIFY"""
-    table_name = utils.sql_table_name(queue_table)
+    queue_table_schema, queue_table_name = queue_table.splt(".")
     loop = asyncio.get_event_loop()
     notification_queue = asyncio.Queue(loop=loop)
-    loop.create_task(utils.wait_for_notify(table_name, notification_queue))
+    loop.create_task(utils.wait_for_notify(queue_table_schema, queue_table_name, notification_queue))
     loop.run_until_complete(utils.shutdown(notification_queue))
     loop.run_forever()
 
@@ -80,8 +80,7 @@ def wait_for_notify(queue_table):
 )
 def delete_job(queue_table):
     """Delete executed task"""
-    table_name = utils.sql_table_name(queue_table)
-    asyncio.run(utils.delete_executed_job(table_name))
+    asyncio.run(utils.delete_executed_job(queue_table))
 
 
 script.add_command(run)

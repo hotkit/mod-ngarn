@@ -9,7 +9,8 @@ from typing import Callable, Union
 
 from asyncpg.connection import Connection
 
-from .connection import get_connection
+from .api import delete_executed_job as api_delete_executed_job
+from .connection import DBConnection
 
 
 class ImportNotFoundException(Exception):
@@ -28,10 +29,6 @@ def sql_table_name(queue_table: str) -> str:
         else quote_table_name
     )
     return (".").join(table_name)
-
-
-def notify_channel(queue_table: str) -> str:
-    return queue_table.replace('"', "").replace(".", "_")
 
 
 async def get_fn_name(func: Union[str, Callable]) -> str:
@@ -71,64 +68,6 @@ async def import_fn(fn_name) -> Callable:
         raise ImportNotFoundException(e)
 
 
-async def is_table_exists(name: str) -> bool:
-    cnx = await get_connection()
-    return await cnx.fetchval(
-        """SELECT EXISTS (SELECT 1 FROM pg_tables 
-            WHERE schemaname || '.' || tablename = '{queue_table}');
-        """.format(
-            queue_table=name.replace('"', "")
-        )
-    )
-
-
-async def exec_create_table(cnx: asyncpg.connection, name: str):
-    await cnx.execute(
-        """CREATE TABLE {queue_table} (
-                id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
-                fn_name TEXT NOT NULL,
-                args JSON DEFAULT '[]',
-                kwargs JSON DEFAULT '{{}}',
-                priority INTEGER DEFAULT 0,
-                created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                scheduled TIMESTAMP WITH TIME ZONE,
-                executed TIMESTAMP WITH TIME ZONE,
-                canceled TIMESTAMP WITH TIME ZONE,
-                result JSON,
-                reason TEXT,
-                processed_time TEXT,
-                PRIMARY KEY (id)
-            );
-        """.format(
-            queue_table=name
-        )
-    )
-
-    await cnx.execute(
-        f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON {name} (executed) WHERE executed IS NULL;"""
-    )
-
-    await cnx.execute(
-        """
-    CREATE OR REPLACE FUNCTION "{notify_channel}_notify_job"()
-    RETURNS TRIGGER LANGUAGE plpgsql AS $$
-    BEGIN
-        NOTIFY "{notify_channel}";
-        RETURN NEW;
-    END;
-    $$;
-
-    DROP TRIGGER IF EXISTS "{notify_channel}_notify_job_inserted" ON {table_name};
-    CREATE TRIGGER "{notify_channel}_notify_job_inserted"
-    AFTER INSERT ON {table_name}
-    FOR EACH ROW
-    EXECUTE PROCEDURE "{notify_channel}_notify_job"();
-    """.format(
-            notify_channel=notify_channel(name), table_name=name
-        )
-    )
-
-
 async def exec_create_log_table(cnx: asyncpg.connection, name: str):
     await cnx.execute(
         """CREATE TABLE IF NOT EXISTS {queue_table} (
@@ -147,41 +86,58 @@ async def exec_create_log_table(cnx: asyncpg.connection, name: str):
     )
 
 
-async def create_table(name: str):
-    print(f"Creating table {name}...")
-    cnx = await get_connection()
-    async with cnx.transaction():
-        if await is_table_exists(name):
-            print(
-                "Table {queue_table} already exists, skipped".format(queue_table=name)
-            )
-        else:
-            await exec_create_table(cnx, name)
+async def is_migration_executed(cnx: asyncpg.connection, migrate_file: str, queue_table_schema: str, queue_table_name: str) -> bool:
+    migration_table =  await cnx.fetchval(
+        """SELECT EXISTS (SELECT 1 FROM pg_tables
+            WHERE schemaname || '.' || tablename = 'public.mod_ngarn_migration');
+        """)
+    if not migration_table:
+        return False
 
-        log_table_name = sql_table_name(name.replace('"', "") + "_error")
-        if await is_table_exists(log_table_name):
-            print(
-                "Table {queue_table} already exists, skipped".format(
-                    queue_table=log_table_name
-                )
-            )
-        else:
-            await exec_create_log_table(cnx, log_table_name)
-
-    print(f"Done")
+    return await cnx.fetchval(
+        """SELECT EXISTS (SELECT 1 FROM public.mod_ngarn_migration
+            WHERE migrate_file = $1 AND queue_table = $2);
+        """, migrate_file, f'{queue_table_schema}.{queue_table_name}')
 
 
-async def wait_for_notify(queue_table: str, q: asyncio.Queue):
+async def migrate(cnx: asyncpg.connection, migrate_file: str, queue_table_schema: str, queue_table_name: str) -> None:
+    with open(migrate_file) as f:
+        sql = f.read()
+        sql = sql.replace("{queue_table_schema}", queue_table_schema)
+        sql = sql.replace("{queue_table_name}", queue_table_name)
+        await cnx.execute(sql)
+        await cnx.execute("""
+            INSERT INTO public.mod_ngarn_migration(migrate_file, queue_table)
+            VALUES ($1, $2);"""
+        ,os.path.basename(migrate_file), f'{queue_table_schema}.{queue_table_name}')
+
+
+async def create_table(queue_table_schema: str, queue_table_name: str)->None:
+    print(f"/* Creating table {queue_table_schema}.{queue_table_name}... */")
+    async with DBConnection() as cnx:
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        schma_path = os.path.join(os.path.dirname(dir_path), 'schema')
+        migrate_files = [(os.path.join(schma_path ,filepath)) for filepath in os.listdir(schma_path) if filepath.endswith(".sql")]
+        migrate_files.sort()
+        async with cnx.transaction():
+            for migrate_file in migrate_files:
+                if await is_migration_executed(cnx, os.path.basename(migrate_file), queue_table_schema, queue_table_name):
+                    continue
+                else:
+                    await migrate(cnx, migrate_file, queue_table_schema, queue_table_name)
+    print(f"/* Done */")
+
+
+async def wait_for_notify(queue_table_schema: str, queue_table_name: str, q: asyncio.Queue):
     """ Wait for notification and put channel to the Queue """
-    notify_ch = notify_channel(queue_table)
-    print(f"LISTENING ON {notify_ch}...")
-    cnx = await get_connection()
+    print(f"/* LISTENING ON {queue_table_schema}_{queue_table_name}... */")
+    async with DBConnection() as cnx:
 
-    def notified(cnx: Connection, pid: int, channel: str, payload: str):
-        print("Notified, shutting down...")
-        asyncio.gather(cnx.close(), q.put(channel))
+        def notified(cnx: Connection, pid: int, channel: str, payload: str):
+            print("/* Notified, shutting down... */")
+            asyncio.gather(cnx.close(), q.put(channel))
 
-    await cnx.add_listener(notify_ch, notified)
+        await cnx.add_listener(f"{queue_table_schema}_{queue_table_name}", notified)
 
 
 async def shutdown(q: asyncio.Queue):
@@ -190,11 +146,6 @@ async def shutdown(q: asyncio.Queue):
     sys.exit()
 
 
-async def delete_executed_job(queue_table: str) -> str:
-    """ Delete executed Job """
-    cnx = await get_connection()
-    return await cnx.execute(
-        """DELETE from {queue_table} where executed is not null""".format(
-            queue_table=queue_table
-        )
-    )
+async def delete_executed_job(queue_table: str) -> None:
+    async with DBConnection() as cnx:
+        await api_delete_executed_job(cnx, queue_table)

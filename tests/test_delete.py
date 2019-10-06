@@ -3,7 +3,8 @@ import sys
 import pytest
 
 from mod_ngarn.connection import get_connection
-from mod_ngarn.utils import create_table, delete_executed_job
+from mod_ngarn.utils import create_table
+from mod_ngarn.api import delete_executed_job
 
 from datetime import datetime
 from tests.utils import insert_job
@@ -16,7 +17,7 @@ async def async_dummy_job(text):
 @pytest.mark.asyncio
 async def test_delete_executed_job_successfully(event_loop):
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f"TRUNCATE TABLE {queue_table}")
     await cnx.execute(f"TRUNCATE TABLE {queue_table}_error")
@@ -33,7 +34,7 @@ async def test_delete_executed_job_successfully(event_loop):
         "hello",
     )
 
-    result = await delete_executed_job(queue_table)
+    result = await delete_executed_job(cnx, queue_table)
     operation, effected_row = result.split(" ")
     assert operation == "DELETE"
     assert effected_row == "1"
