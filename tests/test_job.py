@@ -102,6 +102,9 @@ async def test_job_failed_record_to_db():
     assert "KeyError" in job_db["reason"]
     assert "Traceback" in job_db["reason"]
 
+    log_db = await cnx.fetchval(f"SELECT COUNT(*) FROM {queue_table}_error WHERE id=$1", "job-2")
+    assert log_db == 1
+
     job = Job(cnx, "public", "modngarn_job", "job-2", "tests.test_job.raise_dummy_job", 1)
     await job.execute()
     job_db = await cnx.fetchrow(f"SELECT * FROM {queue_table} WHERE id=$1", "job-2")
@@ -109,6 +112,10 @@ async def test_job_failed_record_to_db():
     assert job_db["priority"] == 2
     assert "KeyError" in job_db["reason"]
     assert "Traceback" in job_db["reason"]
+
+    log_db = await cnx.fetchval(f"SELECT COUNT(*) FROM {queue_table}_error WHERE id=$1", "job-2")
+    assert log_db == 2
+
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.close()
 

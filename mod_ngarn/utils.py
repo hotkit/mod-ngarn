@@ -9,7 +9,6 @@ from typing import Callable, Union
 
 from asyncpg.connection import Connection
 
-from .api import delete_executed_job as api_delete_executed_job
 from .connection import DBConnection
 
 
@@ -145,7 +144,25 @@ async def shutdown(q: asyncio.Queue):
     await q.get()
     sys.exit()
 
+# todo option:
+# delete_executed_job(
+#     repeat: bool=None,
+#     next_scheduled: datetime=None,
+#     upper_limit: datetime=None,
+#     batch_size: int=None
+# )
+async def delete_executed_job(queue_table: str, cnx: asyncpg.Connection = None) -> str:
+    """ Delete executed Job """
+    if not cnx:
+        async with DBConnection() as cnx:
+            return await exec_delete_executed_job(cnx, queue_table)
+    else:
+        return await exec_delete_executed_job(cnx, queue_table)
 
-async def delete_executed_job(queue_table: str) -> None:
-    async with DBConnection() as cnx:
-        await api_delete_executed_job(cnx, queue_table)
+
+async def exec_delete_executed_job(cnx: asyncpg.Connection, queue_table: str) -> None:
+    return await cnx.execute(
+        """DELETE from {queue_table} where executed is not null""".format(
+            queue_table=sql_table_name(queue_table)
+        )
+    )

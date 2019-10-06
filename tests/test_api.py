@@ -16,7 +16,7 @@ async def test_add_job_should_return_inserted_record():
     fn_name = "fn_name"
     args = ["a", "b"]
     kwargs = {"a": "1", "b": "2"}
-    res = await add_job(cnx, "public", "modngarn_job", job_id, fn_name, kwargs=kwargs, args=args)
+    res = await add_job(cnx, "modngarn_job", job_id, fn_name, kwargs=kwargs, args=args)
 
     assert res["id"] == job_id
     assert res["fn_name"] == fn_name
@@ -35,7 +35,7 @@ async def test_add_job_with_only_fn_name_should_store_empty_args_and_kwargs():
     cnx = await get_connection()
     job_id = "job-1"
     fn_name = "fn_name"
-    await add_job(cnx, "public", "modngarn_job", job_id, fn_name)
+    await add_job(cnx, "modngarn_job", job_id, fn_name)
 
     res = await cnx.fetchrow(
         f"SELECT id, fn_name, args, kwargs, priority FROM {queue_table}"
@@ -100,7 +100,7 @@ async def test_add_job_should_convert_callable_to_string_function_name():
     cnx = await get_connection()
     job_id = "job-1"
     fn_name = async_sum
-    await add_job(cnx, "public", "modngarn_job", job_id, fn_name)
+    await add_job(cnx, "modngarn_job", job_id, fn_name)
 
     res = await cnx.fetchrow(
         f"SELECT id, fn_name, args, kwargs, priority FROM {queue_table}"

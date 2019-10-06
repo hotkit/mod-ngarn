@@ -3,8 +3,7 @@ import sys
 import pytest
 
 from mod_ngarn.connection import get_connection
-from mod_ngarn.utils import create_table
-from mod_ngarn.api import delete_executed_job
+from mod_ngarn.utils import create_table, delete_executed_job
 
 from datetime import datetime
 from tests.utils import insert_job
@@ -34,7 +33,7 @@ async def test_delete_executed_job_successfully(event_loop):
         "hello",
     )
 
-    result = await delete_executed_job(cnx, queue_table)
+    result = await delete_executed_job(queue_table, cnx=cnx)
     operation, effected_row = result.split(" ")
     assert operation == "DELETE"
     assert effected_row == "1"

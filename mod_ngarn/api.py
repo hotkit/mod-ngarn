@@ -32,12 +32,3 @@ async def add_job(
         args,
         kwargs,
     )
-
-
-async def delete_executed_job(cnx: asyncpg.Connection, queue_table: str) -> str:
-    """ Delete executed Job """
-    return await cnx.execute(
-        """DELETE from {queue_table} where executed is not null""".format(
-            queue_table=sql_table_name(queue_table)
-        )
-    )

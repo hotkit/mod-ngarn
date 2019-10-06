@@ -80,7 +80,7 @@ def wait_for_notify(queue_table):
 )
 def delete_job(queue_table):
     """Delete executed task"""
-    asyncio.run(utils.delete_executed_job(queue_table))
+    asyncio.run(utils.call_delete_executed_job(queue_table))
 
 
 script.add_command(run)
