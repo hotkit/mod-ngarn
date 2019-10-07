@@ -52,12 +52,7 @@ async def test_delete_executed_job_with_keep_period():
     await cnx.execute(f"TRUNCATE TABLE {queue_table}_error")
 
     await insert_job(
-        cnx,
-        queue_table,
-        "job-1",
-        "tests.utils.async_dummy_job",
-        None,
-        "hello"
+        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", None, "hello"
     )
     await insert_job(
         cnx,
@@ -97,12 +92,7 @@ async def test_delete_executed_job_with_batch_size_lower_than_executed_job():
     await cnx.execute(f"TRUNCATE TABLE {queue_table}_error")
 
     await insert_job(
-        cnx,
-        queue_table,
-        "job-1",
-        "tests.utils.async_dummy_job",
-        None,
-        "hello"
+        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", None, "hello"
     )
     await insert_job(
         cnx,
@@ -144,12 +134,7 @@ async def test_delete_executed_job_with_repeat_true():
     await cnx.execute(f"TRUNCATE TABLE {queue_table}_error")
 
     await insert_job(
-        cnx,
-        queue_table,
-        "job-1",
-        "tests.utils.async_dummy_job",
-        None,
-        "hello"
+        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", None, "hello"
     )
     await insert_job(
         cnx,
@@ -169,11 +154,15 @@ async def test_delete_executed_job_with_repeat_true():
         "hello",
     )
 
-    result = await delete_executed_job(queue_table, cnx=cnx, repeat=True, scheduled_day=30)
+    result = await delete_executed_job(
+        queue_table, cnx=cnx, repeat=True, scheduled_day=30
+    )
     operation, effected_row = result.split(" ")
     assert operation == "DELETE"
     assert effected_row == "2"
-    res = await cnx.fetch(f"SELECT * FROM {queue_table} ORDER BY fn_name DESC, id ASC;;")
+    res = await cnx.fetch(
+        f"SELECT * FROM {queue_table} ORDER BY fn_name DESC, id ASC;;"
+    )
     assert len(res) == 2
     assert res[0]["id"] == "job-1"
     assert res[1]["fn_name"] == "mod_ngarn.utils.delete_executed_job"
@@ -190,12 +179,7 @@ async def test_delete_executed_job_with_repeat_true_and_batch():
     await cnx.execute(f"TRUNCATE TABLE {queue_table}_error")
 
     await insert_job(
-        cnx,
-        queue_table,
-        "job-1",
-        "tests.utils.async_dummy_job",
-        None,
-        "hello"
+        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", None, "hello"
     )
     await insert_job(
         cnx,
@@ -215,11 +199,15 @@ async def test_delete_executed_job_with_repeat_true_and_batch():
         "hello",
     )
 
-    result = await delete_executed_job(queue_table, cnx=cnx, repeat=True, scheduled_day=30, batch_size=1)
+    result = await delete_executed_job(
+        queue_table, cnx=cnx, repeat=True, scheduled_day=30, batch_size=1
+    )
     operation, effected_row = result.split(" ")
     assert operation == "DELETE"
     assert effected_row == "1"
-    res = await cnx.fetch(f"SELECT * FROM {queue_table} ORDER BY fn_name DESC, id ASC;;")
+    res = await cnx.fetch(
+        f"SELECT * FROM {queue_table} ORDER BY fn_name DESC, id ASC;;"
+    )
     assert len(res) == 3
     assert res[0]["id"] == "job-1"
     assert res[1]["id"] == "job-2"
