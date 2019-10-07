@@ -38,7 +38,14 @@ async def test_job_execute_sync_fn_success():
     await create_table("public", "modngarn_job")
     cnx = await get_connection()
     job = Job(
-        cnx, "public", "modngarn_job", "job-1", "tests.test_job.sync_dummy_job", 1, ["hello"], {}
+        cnx,
+        "public",
+        "modngarn_job",
+        "job-1",
+        "tests.test_job.sync_dummy_job",
+        1,
+        ["hello"],
+        {},
     )
     result = await job.execute()
     assert result == "hello"
@@ -50,7 +57,14 @@ async def test_job_execute_async_fn_success():
     await create_table("public", "modngarn_job")
     cnx = await get_connection()
     job = Job(
-        cnx, "public", "modngarn_job", "job-1", "tests.test_job.async_dummy_job", 1, ["hello"], {}
+        cnx,
+        "public",
+        "modngarn_job",
+        "job-1",
+        "tests.test_job.async_dummy_job",
+        1,
+        ["hello"],
+        {},
     )
     result = await job.execute()
     assert result == "hello"
@@ -71,7 +85,14 @@ async def test_job_success_record_to_db():
         )
     )
     job = Job(
-        cnx, "public", "modngarn_job", "job-1", "tests.test_job.async_dummy_job", 0, ["hello"], {}
+        cnx,
+        "public",
+        "modngarn_job",
+        "job-1",
+        "tests.test_job.async_dummy_job",
+        0,
+        ["hello"],
+        {},
     )
     result = await job.execute()
     assert result == "hello"
@@ -94,7 +115,9 @@ async def test_job_failed_record_to_db():
             queue_table=queue_table
         )
     )
-    job = Job(cnx, "public", "modngarn_job", "job-2", "tests.test_job.raise_dummy_job", 0)
+    job = Job(
+        cnx, "public", "modngarn_job", "job-2", "tests.test_job.raise_dummy_job", 0
+    )
     await job.execute()
     job_db = await cnx.fetchrow(f"SELECT * FROM {queue_table} WHERE id=$1", "job-2")
     assert job_db["result"] == None
@@ -102,10 +125,14 @@ async def test_job_failed_record_to_db():
     assert "KeyError" in job_db["reason"]
     assert "Traceback" in job_db["reason"]
 
-    log_db = await cnx.fetchval(f"SELECT COUNT(*) FROM {queue_table}_error WHERE id=$1", "job-2")
+    log_db = await cnx.fetchval(
+        f"SELECT COUNT(*) FROM {queue_table}_error WHERE id=$1", "job-2"
+    )
     assert log_db == 1
 
-    job = Job(cnx, "public", "modngarn_job", "job-2", "tests.test_job.raise_dummy_job", 1)
+    job = Job(
+        cnx, "public", "modngarn_job", "job-2", "tests.test_job.raise_dummy_job", 1
+    )
     await job.execute()
     job_db = await cnx.fetchrow(f"SELECT * FROM {queue_table} WHERE id=$1", "job-2")
     assert job_db["result"] == None
@@ -113,7 +140,9 @@ async def test_job_failed_record_to_db():
     assert "KeyError" in job_db["reason"]
     assert "Traceback" in job_db["reason"]
 
-    log_db = await cnx.fetchval(f"SELECT COUNT(*) FROM {queue_table}_error WHERE id=$1", "job-2")
+    log_db = await cnx.fetchval(
+        f"SELECT COUNT(*) FROM {queue_table}_error WHERE id=$1", "job-2"
+    )
     assert log_db == 2
 
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
@@ -134,7 +163,9 @@ async def test_job_failed_exponential_delay_job_based_on_priority():
             queue_table=queue_table
         )
     )
-    job = Job(cnx, "public", "modngarn_job", "job-2", "tests.test_job.raise_dummy_job", 0)
+    job = Job(
+        cnx, "public", "modngarn_job", "job-2", "tests.test_job.raise_dummy_job", 0
+    )
     # First failed, should delay 1 sec
     await job.execute()
     job_db = await cnx.fetchrow(f"SELECT * FROM {queue_table} WHERE id=$1", "job-2")
@@ -192,7 +223,13 @@ async def test_job_failed_can_set_max_delay():
         )
     )
     job = Job(
-        cnx, "public", "modngarn_job", "job-2", "tests.test_job.raise_dummy_job", 0, max_delay=1.5
+        cnx,
+        "public",
+        "modngarn_job",
+        "job-2",
+        "tests.test_job.raise_dummy_job",
+        0,
+        max_delay=1.5,
     )
     # First failed, should delay 1 sec
     await job.execute()

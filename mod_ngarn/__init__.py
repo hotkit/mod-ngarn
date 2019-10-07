@@ -1,6 +1,6 @@
 """Simple async worker"""
 
-__version__ = "3.3"
+__version__ = "3.4"
 
 import asyncio
 import os
@@ -41,7 +41,9 @@ def run(queue_table, limit, max_delay):
     loop = asyncio.get_event_loop()
     if max_delay:
         max_delay = float(max_delay)
-    loop.run_until_complete(job_runner.run(queue_table_schema, queue_table_name, limit, max_delay))
+    loop.run_until_complete(
+        job_runner.run(queue_table_schema, queue_table_name, limit, max_delay)
+    )
 
 
 @click.command()
@@ -67,7 +69,9 @@ def wait_for_notify(queue_table):
     queue_table_schema, queue_table_name = utils.sql_table_name(queue_table).replace('"', "").splt(".")
     loop = asyncio.get_event_loop()
     notification_queue = asyncio.Queue(loop=loop)
-    loop.create_task(utils.wait_for_notify(queue_table_schema, queue_table_name, notification_queue))
+    loop.create_task(
+        utils.wait_for_notify(queue_table_schema, queue_table_name, notification_queue)
+    )
     loop.run_until_complete(utils.shutdown(notification_queue))
     loop.run_forever()
 

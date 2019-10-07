@@ -29,25 +29,29 @@ async def test_can_create_table_with_specific_name():
     migration_table = await cnx.fetchval(
         """SELECT EXISTS (SELECT 1 FROM pg_tables
             WHERE schemaname || '.' || tablename = 'public.mod_ngarn_migration');
-        """)
+        """
+    )
     assert migration_table == True
 
     job_table = await cnx.fetchval(
         """SELECT EXISTS (SELECT 1 FROM pg_tables
             WHERE schemaname || '.' || tablename = 'public.modngarn_job');
-        """)
+        """
+    )
     assert job_table == True
 
     log_table = await cnx.fetchval(
         """SELECT EXISTS (SELECT 1 FROM pg_tables
             WHERE schemaname || '.' || tablename = 'public.modngarn_job_error');
-        """)
+        """
+    )
     assert log_table == True
 
     migration = await cnx.fetchval(
         """SELECT EXISTS (SELECT 1 FROM public.mod_ngarn_migration
             WHERE queue_table='public.modngarn_job');
-        """)
+        """
+    )
     assert migration == True
 
     await cnx.execute(f"DROP TABLE public.mod_ngarn_migration;")
@@ -65,25 +69,29 @@ async def test_can_create_table_with_specific_special_character_name():
     migration_table = await cnx.fetchval(
         """SELECT EXISTS (SELECT 1 FROM pg_tables
             WHERE schemaname || '.' || tablename = 'public.mod_ngarn_migration');
-        """)
+        """
+    )
     assert migration_table == True
 
     job_table = await cnx.fetchval(
         """SELECT EXISTS (SELECT 1 FROM pg_tables
             WHERE schemaname || '.' || tablename = 'public.modnga/rn_job');
-        """)
+        """
+    )
     assert job_table == True
 
     log_table = await cnx.fetchval(
         """SELECT EXISTS (SELECT 1 FROM pg_tables
             WHERE schemaname || '.' || tablename = 'public.modnga/rn_job_error');
-        """)
+        """
+    )
     assert log_table == True
 
     migration = await cnx.fetchval(
         """SELECT EXISTS (SELECT 1 FROM public.mod_ngarn_migration
             WHERE queue_table='public.modnga/rn_job');
-        """)
+        """
+    )
     assert migration == True
 
     await cnx.execute(f"DROP TABLE public.mod_ngarn_migration;")

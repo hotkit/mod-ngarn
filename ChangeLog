@@ -1,4 +1,5 @@
-[[RELEASED 3.3]]
+2019-09-12  Tle Ekkul  <e.aryuth@gmail.com>
+ Changed: Update asyncpg version
 
 2019-08-07  Sukit <sukit_owl@hotmail.com>
  Changed: Auto use schema "public" when queue-table has only name
@@ -6,8 +7,6 @@
  
 2019-07-09  Sem  <pumidon@hot-now.com>
  Changed: Automatically create log table when create table and support keep error log.
-
-[[RELEASED 3.2]]
 
 2019-04-09  Tle Ekkul  <e.aryuth@gmail.com>
  Changed: Not exit with status code 3 when no jobs anymore

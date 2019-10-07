@@ -111,7 +111,11 @@ class Job:
 @dataclass
 class JobRunner:
     async def fetch_job(
-        self, cnx: asyncpg.Connection,  queue_table_schema: str, queue_table_name: str, max_delay: float
+        self,
+        cnx: asyncpg.Connection,
+        queue_table_schema: str,
+        queue_table_name: str,
+        max_delay: float,
     ):
         result = await cnx.fetchrow(
             f"""SELECT id, fn_name, args, kwargs, priority FROM "{queue_table_schema}"."{queue_table_name}"
@@ -137,20 +141,21 @@ class JobRunner:
                 max_delay=max_delay,
             )
 
-    async def run(self, queue_table_schema: str, queue_table_name: str, limit: int, max_delay: float):
+    async def run(
+        self, queue_table_schema: str, queue_table_name: str, limit: int, max_delay: int
+    ):
         cnx = await get_connection()
-        log.info(
-            f"Running mod-ngarn, queue table name: {queue_table_schema}.{queue_table_name}, limit: {limit} jobs, max_delay: {max_delay}"
-        )
         for job_number in range(1, limit + 1):
             # We can reduce isolation to Read Committed
             # because we are using SKIP LOCK FOR UPDATE
             async with cnx.transaction(isolation="read_committed"):
-                job = await self.fetch_job(cnx, queue_table_schema, queue_table_name, max_delay)
+                job = await self.fetch_job(
+                    cnx, queue_table_schema, queue_table_name, max_delay
+                )
                 if job:
                     log.info(f"Executing#{job_number}: \t{job.id}")
                     result = await job.execute()
                     log.info(f"Executed#{job_number}: \t{result}")
                 else:
-                    break
+                    sys.exit(3)
         await cnx.close()
