@@ -137,11 +137,8 @@ class JobRunner:
                 max_delay=max_delay,
             )
 
-    async def run(self, queue_table_schema: str, queue_table_name: str, limit: int, max_delay: float):
+    async def run(self, queue_table_schema: str, queue_table_name: str, limit: int, max_delay: int):
         cnx = await get_connection()
-        log.info(
-            f"Running mod-ngarn, queue table name: {queue_table_schema}.{queue_table_name}, limit: {limit} jobs, max_delay: {max_delay}"
-        )
         for job_number in range(1, limit + 1):
             # We can reduce isolation to Read Committed
             # because we are using SKIP LOCK FOR UPDATE
@@ -152,5 +149,5 @@ class JobRunner:
                     result = await job.execute()
                     log.info(f"Executed#{job_number}: \t{result}")
                 else:
-                    break
+                    sys.exit(3)
         await cnx.close()
