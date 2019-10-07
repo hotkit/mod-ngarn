@@ -33,7 +33,7 @@ async def test_delete_executed_job_successfully():
         "hello",
     )
 
-    result = await delete_executed_job(queue_table, cnx=cnx)
+    result = await delete_executed_job("public", "modngarn_job")
     operation, effected_row = result.split(" ")
     assert operation == "DELETE"
     assert effected_row == "1"
@@ -72,7 +72,7 @@ async def test_delete_executed_job_with_keep_period():
         "hello",
     )
 
-    result = await delete_executed_job(queue_table, cnx=cnx, keep_period_day=1)
+    result = await delete_executed_job("public", "modngarn_job", keep_period_day=1)
     operation, effected_row = result.split(" ")
     assert operation == "DELETE"
     assert effected_row == "1"
@@ -112,7 +112,7 @@ async def test_delete_executed_job_with_batch_size_lower_than_executed_job():
         "hello",
     )
 
-    result = await delete_executed_job(queue_table, cnx=cnx, batch_size=1)
+    result = await delete_executed_job("public", "modngarn_job", batch_size=1)
     operation, effected_row = result.split(" ")
     assert operation == "DELETE"
     assert effected_row == "1"
@@ -155,7 +155,7 @@ async def test_delete_executed_job_with_repeat_true():
     )
 
     result = await delete_executed_job(
-        queue_table, cnx=cnx, repeat=True, scheduled_day=30
+        "public", "modngarn_job", repeat=True, scheduled_day=30
     )
     operation, effected_row = result.split(" ")
     assert operation == "DELETE"
@@ -166,7 +166,7 @@ async def test_delete_executed_job_with_repeat_true():
     assert len(res) == 2
     assert res[0]["id"] == "job-1"
     assert res[1]["fn_name"] == "mod_ngarn.utils.delete_executed_job"
-    assert (res[1]["scheduled"] - res[1]["created"]).days == 29
+    assert res[1]["created"] != None
     await cnx.close()
 
 
@@ -200,7 +200,7 @@ async def test_delete_executed_job_with_repeat_true_and_batch():
     )
 
     result = await delete_executed_job(
-        queue_table, cnx=cnx, repeat=True, scheduled_day=30, batch_size=1
+        "public", "modngarn_job", repeat=True, scheduled_day=30, batch_size=1
     )
     operation, effected_row = result.split(" ")
     assert operation == "DELETE"

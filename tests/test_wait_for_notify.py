@@ -8,7 +8,7 @@ import sys
 
 
 @pytest.mark.asyncio
-async def xtest_wait_for_notify_should_listen_to_channel_and_put_to_queue_when_notify(
+async def test_wait_for_notify_should_listen_to_channel_and_put_to_queue_when_notify(
     event_loop
 ):
     queue_schema = "public"
@@ -18,7 +18,7 @@ async def xtest_wait_for_notify_should_listen_to_channel_and_put_to_queue_when_n
     await wait_for_notify(queue_schema, queue_table, q)
     await cnx.execute("NOTIFY public_mod_ngarn_job")
     channel = await q.get()
-    assert channel == queue_table
+    assert channel == "public_mod_ngarn_job"
 
 
 @pytest.mark.asyncio
