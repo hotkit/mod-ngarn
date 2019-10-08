@@ -114,7 +114,7 @@ async def migrate(
 async def create_table(queue_table_schema: str, queue_table_name: str) -> None:
     print(f"/* Creating table {queue_table_schema}.{queue_table_name}... */")
     async with DBConnection() as cnx:
-        dir_path = os.path.dirname(os.path.realpath(__file__))
+        dir_path = os.path.realpath(__file__)
         schma_path = os.path.join(os.path.dirname(dir_path), "schema")
         migrate_files = [
             (os.path.join(schma_path, filepath))
