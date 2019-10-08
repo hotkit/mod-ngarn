@@ -1,3 +1,7 @@
+2019-10-08  Sukit  <sukit_owl@hotmail.com>
+ Changed: New migration method
+ Changed: Return exit code 3 when job less than limit
+ 
 2019-09-12  Tle Ekkul  <e.aryuth@gmail.com>
  Changed: Update asyncpg version
 
