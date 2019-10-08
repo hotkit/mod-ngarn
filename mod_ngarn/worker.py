@@ -15,7 +15,7 @@ import asyncpg
 from dataclasses import dataclass, field
 
 from .connection import get_connection
-from .utils import import_fn
+from .utils import import_fn, sql_table_name
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -28,7 +28,8 @@ log = logging.getLogger("mod_ngarn")
 @dataclass
 class Job:
     cnx: asyncpg.Connection
-    table: str
+    table_schema: str
+    table_name: str
     id: str
     fn_name: str
     priority: int
@@ -66,7 +67,7 @@ class Job:
     async def success(self, result: Dict, processing_time: Decimal) -> str:
         """ Success execution handler """
         return await self.cnx.execute(
-            f"UPDATE {self.table} SET result=$1, executed=NOW(), processed_time=$2, reason=NULL WHERE id=$3",
+            f'UPDATE "{self.table_schema}"."{self.table_name}" SET result=$1, executed=NOW(), processed_time=$2, reason=NULL WHERE id=$3',
             result,
             processing_time,
             self.id,
@@ -82,9 +83,8 @@ class Job:
             )
         )
 
-        error_log_table = f"{self.table}_error"
         await self.cnx.execute(
-            f"INSERT INTO {error_log_table} (id, fn_name, args, kwargs, message, processed_time) VALUES ($1, $2, $3, $4, $5, $6)",
+            f'INSERT INTO "{self.table_schema}"."{self.table_name}_error" (id, fn_name, args, kwargs, message, processed_time) VALUES ($1, $2, $3, $4, $5, $6)',
             self.id,
             self.fn_name,
             self.args,
@@ -94,7 +94,7 @@ class Job:
         )
 
         return await self.cnx.execute(
-            f"UPDATE {self.table} SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1",
+            f'UPDATE "{self.table_schema}"."{self.table_name}" SET priority=priority+1, reason=$2, scheduled=$3  WHERE id=$1',
             self.id,
             error,
             next_schedule,
@@ -111,11 +111,14 @@ class Job:
 @dataclass
 class JobRunner:
     async def fetch_job(
-        self, cnx: asyncpg.Connection, queue_table: str, max_delay: float
+        self,
+        cnx: asyncpg.Connection,
+        queue_table_schema: str,
+        queue_table_name: str,
+        max_delay: float,
     ):
-
         result = await cnx.fetchrow(
-            f"""SELECT id, fn_name, args, kwargs, priority FROM {queue_table}
+            f"""SELECT id, fn_name, args, kwargs, priority FROM "{queue_table_schema}"."{queue_table_name}"
             WHERE executed IS NULL
             AND (scheduled IS NULL OR scheduled < NOW())
             AND canceled IS NULL
@@ -128,7 +131,8 @@ class JobRunner:
         if result:
             return Job(
                 cnx,
-                queue_table,
+                queue_table_schema,
+                queue_table_name,
                 result["id"],
                 result["fn_name"],
                 result["priority"],
@@ -137,20 +141,21 @@ class JobRunner:
                 max_delay=max_delay,
             )
 
-    async def run(self, queue_table, limit, max_delay):
+    async def run(
+        self, queue_table_schema: str, queue_table_name: str, limit: int, max_delay: int
+    ):
         cnx = await get_connection()
-        log.info(
-            f"Running mod-ngarn, queue table name: {queue_table}, limit: {limit} jobs, max_delay: {max_delay}"
-        )
         for job_number in range(1, limit + 1):
             # We can reduce isolation to Read Committed
             # because we are using SKIP LOCK FOR UPDATE
             async with cnx.transaction(isolation="read_committed"):
-                job = await self.fetch_job(cnx, queue_table, max_delay)
+                job = await self.fetch_job(
+                    cnx, queue_table_schema, queue_table_name, max_delay
+                )
                 if job:
                     log.info(f"Executing#{job_number}: \t{job.id}")
                     result = await job.execute()
                     log.info(f"Executed#{job_number}: \t{result}")
                 else:
-                    break
+                    sys.exit(3)
         await cnx.close()

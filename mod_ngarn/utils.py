@@ -3,13 +3,14 @@ import asyncpg
 import os
 import re
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from inspect import getmembers, getmodule, ismethod
 from typing import Callable, Union
+import uuid
 
 from asyncpg.connection import Connection
 
-from .connection import get_connection
+from .connection import DBConnection, get_connection
 
 
 class ImportNotFoundException(Exception):
@@ -28,10 +29,6 @@ def sql_table_name(queue_table: str) -> str:
         else quote_table_name
     )
     return (".").join(table_name)
-
-
-def notify_channel(queue_table: str) -> str:
-    return queue_table.replace('"', "").replace(".", "_")
 
 
 async def get_fn_name(func: Union[str, Callable]) -> str:
@@ -71,117 +68,84 @@ async def import_fn(fn_name) -> Callable:
         raise ImportNotFoundException(e)
 
 
-async def is_table_exists(name: str) -> bool:
-    cnx = await get_connection()
-    return await cnx.fetchval(
-        """SELECT EXISTS (SELECT 1 FROM pg_tables 
-            WHERE schemaname || '.' || tablename = '{queue_table}');
-        """.format(
-            queue_table=name.replace('"', "")
-        )
-    )
-
-
-async def exec_create_table(cnx: asyncpg.connection, name: str):
-    await cnx.execute(
-        """CREATE TABLE {queue_table} (
-                id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
-                fn_name TEXT NOT NULL,
-                args JSON DEFAULT '[]',
-                kwargs JSON DEFAULT '{{}}',
-                priority INTEGER DEFAULT 0,
-                created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                scheduled TIMESTAMP WITH TIME ZONE,
-                executed TIMESTAMP WITH TIME ZONE,
-                canceled TIMESTAMP WITH TIME ZONE,
-                result JSON,
-                reason TEXT,
-                processed_time TEXT,
-                PRIMARY KEY (id)
-            );
-        """.format(
-            queue_table=name
-        )
-    )
-
-    await cnx.execute(
-        f"""CREATE INDEX IF NOT EXISTS idx_pending_jobs ON {name} (executed) WHERE executed IS NULL;"""
-    )
-
-    await cnx.execute(
+async def is_migration_executed(
+    cnx: asyncpg.connection,
+    migrate_file: str,
+    queue_table_schema: str,
+    queue_table_name: str,
+) -> bool:
+    migration_table = await cnx.fetchval(
+        """SELECT EXISTS (SELECT 1 FROM pg_tables
+            WHERE schemaname || '.' || tablename = 'public.mod_ngarn_migration');
         """
-    CREATE OR REPLACE FUNCTION {notify_channel}_notify_job()
-    RETURNS TRIGGER LANGUAGE plpgsql AS $$
-    BEGIN
-        NOTIFY {notify_channel};
-        RETURN NEW;
-    END;
-    $$;
+    )
+    if not migration_table:
+        return False
 
-    DROP TRIGGER IF EXISTS {notify_channel}_notify_job_inserted ON {table_name};
-    CREATE TRIGGER {notify_channel}_notify_job_inserted
-    AFTER INSERT ON {table_name}
-    FOR EACH ROW
-    EXECUTE PROCEDURE {notify_channel}_notify_job();
-    """.format(
-            notify_channel=notify_channel(name), table_name=name
-        )
+    return await cnx.fetchval(
+        """SELECT EXISTS (SELECT 1 FROM public.mod_ngarn_migration
+            WHERE migrate_file = $1 AND queue_table = $2);
+        """,
+        migrate_file,
+        f"{queue_table_schema}.{queue_table_name}",
     )
 
 
-async def exec_create_log_table(cnx: asyncpg.connection, name: str):
-    await cnx.execute(
-        """CREATE TABLE IF NOT EXISTS {queue_table} (
-                id TEXT NOT NULL CHECK (id !~ '\\|/|\u2044|\u2215|\u29f5|\u29f8|\u29f9|\ufe68|\uff0f|\uff3c'),
-                fn_name TEXT NOT NULL,
-                args JSON DEFAULT '[]',
-                kwargs JSON DEFAULT '{{}}',
-                message TEXT NOT NULL,
-                posted TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                processed_time TEXT,
-                PRIMARY KEY (id, posted)
-            );
-        """.format(
-            queue_table=name
+async def migrate(
+    cnx: asyncpg.connection,
+    migrate_file: str,
+    queue_table_schema: str,
+    queue_table_name: str,
+) -> None:
+    with open(migrate_file) as f:
+        sql = f.read()
+        sql = sql.replace("{queue_table_schema}", queue_table_schema)
+        sql = sql.replace("{queue_table_name}", queue_table_name)
+        await cnx.execute(sql)
+        await cnx.execute(
+            """
+            INSERT INTO public.mod_ngarn_migration(migrate_file, queue_table)
+            VALUES ($1, $2);""",
+            os.path.basename(migrate_file),
+            f"{queue_table_schema}.{queue_table_name}",
         )
-    )
 
 
-async def create_table(name: str):
-    print(f"Creating table {name}...")
-    cnx = await get_connection()
-    async with cnx.transaction():
-        if await is_table_exists(name):
-            print(
-                "Table {queue_table} already exists, skipped".format(queue_table=name)
-            )
-        else:
-            await exec_create_table(cnx, name)
+async def create_table(queue_table_schema: str, queue_table_name: str) -> None:
+    print(f"/* Creating table {queue_table_schema}.{queue_table_name}... */")
+    async with DBConnection() as cnx:
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        schma_path = os.path.join(os.path.dirname(dir_path), "schema")
+        migrate_files = [
+            (os.path.join(schma_path, filepath))
+            for filepath in os.listdir(schma_path)
+            if filepath.endswith(".sql")
+        ]
+        migrate_files.sort()
+        async with cnx.transaction():
+            for migrate_file in migrate_files:
+                if not await is_migration_executed(
+                    cnx,
+                    os.path.basename(migrate_file),
+                    queue_table_schema,
+                    queue_table_name,
+                ):
+                    await migrate(
+                        cnx, migrate_file, queue_table_schema, queue_table_name
+                    )
+    print(f"/* Done */")
 
-        log_table_name = sql_table_name(name.replace('"', "") + "_error")
-        if await is_table_exists(log_table_name):
-            print(
-                "Table {queue_table} already exists, skipped".format(
-                    queue_table=log_table_name
-                )
-            )
-        else:
-            await exec_create_log_table(cnx, log_table_name)
 
-    print(f"Done")
-
-
-async def wait_for_notify(queue_table: str, q: asyncio.Queue):
+async def wait_for_notify(
+    queue_table_schema: str, queue_table_name: str, q: asyncio.Queue
+):
     """ Wait for notification and put channel to the Queue """
-    notify_ch = notify_channel(queue_table)
-    print(f"LISTENING ON {notify_ch}...")
-    cnx = await get_connection()
 
     def notified(cnx: Connection, pid: int, channel: str, payload: str):
-        print("Notified, shutting down...")
         asyncio.gather(cnx.close(), q.put(channel))
 
-    await cnx.add_listener(notify_ch, notified)
+    cnx = await get_connection()
+    await cnx.add_listener(f"{queue_table_schema}_{queue_table_name}", notified)
 
 
 async def shutdown(q: asyncio.Queue):
@@ -190,11 +154,79 @@ async def shutdown(q: asyncio.Queue):
     sys.exit()
 
 
-async def delete_executed_job(queue_table: str) -> str:
-    """ Delete executed Job """
-    cnx = await get_connection()
-    return await cnx.execute(
-        """DELETE from {queue_table} where executed is not null""".format(
-            queue_table=queue_table
-        )
-    )
+async def delete_executed_job(
+    queue_table_schema: str,
+    queue_table_name: str,
+    repeat: bool = False,
+    scheduled_day: int = 1,
+    keep_period_day: int = 0,
+    batch_size: int = 0,
+) -> str:
+    async with DBConnection() as cnx:
+        async with cnx.transaction():
+            select_executed_job_sql = """
+                SELECT id FROM {queue_table} WHERE executed IS NOT NULL
+                AND executed < NOW() - INTERVAL '{keep_period_day} days' ORDER BY executed """.format(
+                queue_table=f'"{queue_table_schema}"."{queue_table_name}"',
+                keep_period_day=keep_period_day,
+            )
+
+            delete_sql = """DELETE FROM {queue_table} WHERE id IN ({select_sql});"""
+
+            executed_job = 0
+            if batch_size:
+                select_executed_job_sql = (
+                    select_executed_job_sql + f" LIMIT {batch_size}"
+                )
+                executed_job = await cnx.fetchval(
+                    """
+                    SELECT COUNT(*) - $1 FROM "{}"."{}" WHERE executed IS NOT NULL
+                    AND executed < NOW() - INTERVAL  '{} days'
+                """.format(
+                        queue_table_schema, queue_table_name, keep_period_day
+                    ),
+                    batch_size,
+                )
+
+            deleted = await cnx.execute(
+                delete_sql.format(
+                    queue_table=f'"{queue_table_schema}"."{queue_table_name}"',
+                    select_sql=select_executed_job_sql,
+                )
+            )
+
+            kwargs = {
+                "repeat": repeat,
+                "scheduled_day": scheduled_day,
+                "keep_period_day": keep_period_day,
+                "batch_size": batch_size,
+            }
+
+            if executed_job > 0:
+                await cnx.execute(
+                    """INSERT INTO "{}"."{}" (id, fn_name, args, kwargs)
+                    VALUES ($1, 'mod_ngarn.utils.delete_executed_job', $2, $3)
+                """.format(
+                        queue_table_schema, queue_table_name
+                    ),
+                    str(uuid.uuid4()),
+                    [queue_table_schema, queue_table_name],
+                    kwargs,
+                )
+            elif repeat:
+                next_scheduled = datetime.utcnow().replace(
+                    tzinfo=timezone.utc
+                ) + timedelta(days=scheduled_day)
+                await cnx.execute(
+                    """INSERT INTO "{}"."{}" (id, fn_name, args, kwargs, scheduled)
+                    VALUES ($1, 'mod_ngarn.utils.delete_executed_job', $2, $3, $4)
+                """.format(
+                        queue_table_schema, queue_table_name
+                    ),
+                    str(uuid.uuid4()),
+                    [queue_table_schema, queue_table_name],
+                    kwargs,
+                    next_scheduled,
+                )
+
+            return deleted

@@ -9,7 +9,7 @@ from mod_ngarn.worker import JobRunner
 @pytest.mark.asyncio
 async def test_fetch_job_should_be_able_to_fetch_not_processed_job():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     insert_query = """
@@ -23,7 +23,7 @@ async def test_fetch_job_should_be_able_to_fetch_not_processed_job():
     )
     await cnx.execute(insert_query)
     job_runner = JobRunner()
-    job = await job_runner.fetch_job(cnx, queue_table, None)
+    job = await job_runner.fetch_job(cnx, "public", "modngarn_job", None)
     assert job.id == "job-3"
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.close()
@@ -32,7 +32,7 @@ async def test_fetch_job_should_be_able_to_fetch_not_processed_job():
 @pytest.mark.asyncio
 async def test_fetch_job_should_be_able_to_fetch_correct_scheduled_job():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     insert_query = """
@@ -45,7 +45,7 @@ async def test_fetch_job_should_be_able_to_fetch_correct_scheduled_job():
     )
     await cnx.execute(insert_query)
     job_runner = JobRunner()
-    job = await job_runner.fetch_job(cnx, queue_table, None)
+    job = await job_runner.fetch_job(cnx, "public", "modngarn_job", None)
     assert job.id == "job-2"
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.close()
@@ -54,7 +54,7 @@ async def test_fetch_job_should_be_able_to_fetch_correct_scheduled_job():
 @pytest.mark.asyncio
 async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     insert_query = """
@@ -68,7 +68,7 @@ async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
     )
     await cnx.execute(insert_query)
     job_runner = JobRunner()
-    job = await job_runner.fetch_job(cnx, queue_table, None)
+    job = await job_runner.fetch_job(cnx, "public", "modngarn_job", None)
     assert job.id == "job-3"
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.close()
@@ -77,7 +77,7 @@ async def test_fetch_job_should_be_able_to_fetch_correct_priorities():
 @pytest.mark.asyncio
 async def test_fetch_job_should_be_fetch_only_not_claimed_job():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     insert_query = """
         INSERT INTO {queue_table} (id, fn_name, args, priority)
         VALUES
@@ -96,13 +96,13 @@ async def test_fetch_job_should_be_fetch_only_not_claimed_job():
     job_runner = JobRunner()
     tx1 = cnx1.transaction()
     await tx1.start()
-    job1 = await job_runner.fetch_job(cnx1, queue_table, None)
+    job1 = await job_runner.fetch_job(cnx1, "public", "modngarn_job", None)
 
     # Second worker fetch_job
     cnx2 = await get_connection()
     tx2 = cnx2.transaction()
     await tx2.start()
-    job2 = await job_runner.fetch_job(cnx2, queue_table, None)
+    job2 = await job_runner.fetch_job(cnx2, "public", "modngarn_job", None)
 
     assert job1.id == "job-3"
     assert job2.id == "job-2"
