@@ -36,7 +36,9 @@ def script():
 )
 def run(queue_table, limit, max_delay):
     """Run mod-ngarn job"""
-    queue_table_schema, queue_table_name = utils.sql_table_name(queue_table).replace('"', "").splt(".")
+    queue_table_schema, queue_table_name = (
+        utils.sql_table_name(queue_table).replace('"', "").splt(".")
+    )
     job_runner = JobRunner()
     loop = asyncio.get_event_loop()
     if max_delay:
@@ -54,7 +56,9 @@ def run(queue_table, limit, max_delay):
 )
 def create_table(queue_table):
     """Create mod-ngarn queue table"""
-    queue_table_schema, queue_table_name = utils.sql_table_name(queue_table).replace('"', "").splt(".")
+    queue_table_schema, queue_table_name = (
+        utils.sql_table_name(queue_table).replace('"', "").splt(".")
+    )
     asyncio.run(utils.create_table(queue_table_schema, queue_table_name))
 
 
@@ -83,7 +87,9 @@ def wait_for_notify(queue_table_schema, queue_table_name):
 )
 def delete_job(queue_table):
     """Delete executed task"""
-    queue_table_schema, queue_table_name = utils.sql_table_name(queue_table).replace('"', "").splt(".")
+    queue_table_schema, queue_table_name = (
+        utils.sql_table_name(queue_table).replace('"', "").splt(".")
+    )
     asyncio.run(utils.delete_executed_job(queue_table_schema, queue_table_name))
 
 

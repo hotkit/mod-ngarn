@@ -140,12 +140,12 @@ async def wait_for_notify(
     queue_table_schema: str, queue_table_name: str, q: asyncio.Queue
 ):
     """ Wait for notification and put channel to the Queue """
+
     def notified(cnx: Connection, pid: int, channel: str, payload: str):
         asyncio.gather(cnx.close(), q.put(channel))
 
     cnx = await get_connection()
     await cnx.add_listener(f"{queue_table_schema}_{queue_table_name}", notified)
-
 
 
 async def shutdown(q: asyncio.Queue):
@@ -164,15 +164,20 @@ async def delete_executed_job(
 ) -> str:
     async with DBConnection() as cnx:
         async with cnx.transaction():
-            sql = """DELETE FROM {queue_table} WHERE id IN (
+            select_executed_job_sql = """
                 SELECT id FROM {queue_table} WHERE executed IS NOT NULL
-                AND executed < NOW() - INTERVAL '{keep_period_day} days' ORDER BY executed);""".format(
-                queue_table=f'"{queue_table_schema}"."{queue_table_name}"', keep_period_day=keep_period_day
+                AND executed < NOW() - INTERVAL '{keep_period_day} days' ORDER BY executed """.format(
+                queue_table=f'"{queue_table_schema}"."{queue_table_name}"',
+                keep_period_day=keep_period_day,
             )
+
+            delete_sql = """DELETE FROM {queue_table} WHERE id IN ({select_sql});"""
 
             executed_job = 0
             if batch_size:
-                sql = sql.replace("ORDER BY executed", f"ORDER BY executed LIMIT {batch_size}")
+                select_executed_job_sql = (
+                    select_executed_job_sql + f" LIMIT {batch_size}"
+                )
                 executed_job = await cnx.fetchval(
                     """
                     SELECT COUNT(*) - $1 FROM "{}"."{}" WHERE executed IS NOT NULL
@@ -183,14 +188,21 @@ async def delete_executed_job(
                     batch_size,
                 )
 
-            deleted = await cnx.execute(sql)
+            deleted = await cnx.execute(
+                delete_sql.format(
+                    queue_table=f'"{queue_table_schema}"."{queue_table_name}"',
+                    select_sql=select_executed_job_sql,
+                )
+            )
+
+            kwargs = {
+                "repeat": repeat,
+                "scheduled_day": scheduled_day,
+                "keep_period_day": keep_period_day,
+                "batch_size": batch_size,
+            }
+
             if executed_job > 0:
-                kwargs = {
-                    "repeat": repeat,
-                    "scheduled_day": scheduled_day,
-                    "keep_period_day": keep_period_day,
-                    "batch_size": batch_size,
-                }
                 await cnx.execute(
                     """INSERT INTO "{}"."{}" (id, fn_name, args, kwargs)
                     VALUES ($1, 'mod_ngarn.utils.delete_executed_job', $2, $3)
@@ -202,15 +214,9 @@ async def delete_executed_job(
                     kwargs,
                 )
             elif repeat:
-                next_scheduled = datetime.utcnow().replace(tzinfo=timezone.utc) + timedelta(
-                    days=scheduled_day
-                )
-                kwargs = {
-                    "repeat": repeat,
-                    "scheduled_day": scheduled_day,
-                    "keep_period_day": keep_period_day,
-                    "batch_size": batch_size,
-                }
+                next_scheduled = datetime.utcnow().replace(
+                    tzinfo=timezone.utc
+                ) + timedelta(days=scheduled_day)
                 await cnx.execute(
                     """INSERT INTO "{}"."{}" (id, fn_name, args, kwargs, scheduled)
                     VALUES ($1, 'mod_ngarn.utils.delete_executed_job', $2, $3, $4)
