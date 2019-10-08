@@ -70,6 +70,9 @@ def create_table(queue_table):
 )
 def wait_for_notify(queue_table):
     """Wait and listening for NOTIFY"""
+    queue_table_schema, queue_table_name = (
+        utils.sql_table_name(queue_table).replace('"', "").split(".")
+    )
     loop = asyncio.get_event_loop()
     notification_queue = asyncio.Queue(loop=loop)
     loop.create_task(
