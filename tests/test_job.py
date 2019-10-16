@@ -25,9 +25,9 @@ def raise_dummy_job():
 
 @pytest.mark.asyncio
 async def test_job_execute_builtin_success():
-    await create_table('"public"."modngarn_job"')
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
-    job = Job(cnx, "modngarn_job", "job-1", "sum", 1, [[1, 2]], {})
+    job = Job(cnx, "public", "modngarn_job", "job-1", "sum", 1, [[1, 2]], {})
     result = await job.execute()
     assert result == 3
     await cnx.close()
@@ -35,10 +35,17 @@ async def test_job_execute_builtin_success():
 
 @pytest.mark.asyncio
 async def test_job_execute_sync_fn_success():
-    await create_table('"public"."modngarn_job"')
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     job = Job(
-        cnx, "modngarn_job", "job-1", "tests.test_job.sync_dummy_job", 1, ["hello"], {}
+        cnx,
+        "public",
+        "modngarn_job",
+        "job-1",
+        "tests.test_job.sync_dummy_job",
+        1,
+        ["hello"],
+        {},
     )
     result = await job.execute()
     assert result == "hello"
@@ -47,10 +54,17 @@ async def test_job_execute_sync_fn_success():
 
 @pytest.mark.asyncio
 async def test_job_execute_async_fn_success():
-    await create_table('"public"."modngarn_job"')
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     job = Job(
-        cnx, "modngarn_job", "job-1", "tests.test_job.async_dummy_job", 1, ["hello"], {}
+        cnx,
+        "public",
+        "modngarn_job",
+        "job-1",
+        "tests.test_job.async_dummy_job",
+        1,
+        ["hello"],
+        {},
     )
     result = await job.execute()
     assert result == "hello"
@@ -60,7 +74,7 @@ async def test_job_execute_async_fn_success():
 @pytest.mark.asyncio
 async def test_job_success_record_to_db():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.execute(
@@ -71,7 +85,14 @@ async def test_job_success_record_to_db():
         )
     )
     job = Job(
-        cnx, queue_table, "job-1", "tests.test_job.async_dummy_job", 0, ["hello"], {}
+        cnx,
+        "public",
+        "modngarn_job",
+        "job-1",
+        "tests.test_job.async_dummy_job",
+        0,
+        ["hello"],
+        {},
     )
     result = await job.execute()
     assert result == "hello"
@@ -84,7 +105,7 @@ async def test_job_success_record_to_db():
 @pytest.mark.asyncio
 async def test_job_failed_record_to_db():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.execute(
@@ -94,7 +115,9 @@ async def test_job_failed_record_to_db():
             queue_table=queue_table
         )
     )
-    job = Job(cnx, queue_table, "job-2", "tests.test_job.raise_dummy_job", 0)
+    job = Job(
+        cnx, "public", "modngarn_job", "job-2", "tests.test_job.raise_dummy_job", 0
+    )
     await job.execute()
     job_db = await cnx.fetchrow(f"SELECT * FROM {queue_table} WHERE id=$1", "job-2")
     assert job_db["result"] == None
@@ -102,13 +125,26 @@ async def test_job_failed_record_to_db():
     assert "KeyError" in job_db["reason"]
     assert "Traceback" in job_db["reason"]
 
-    job = Job(cnx, queue_table, "job-2", "tests.test_job.raise_dummy_job", 1)
+    log_db = await cnx.fetchval(
+        f"SELECT COUNT(*) FROM {queue_table}_error WHERE id=$1", "job-2"
+    )
+    assert log_db == 1
+
+    job = Job(
+        cnx, "public", "modngarn_job", "job-2", "tests.test_job.raise_dummy_job", 1
+    )
     await job.execute()
     job_db = await cnx.fetchrow(f"SELECT * FROM {queue_table} WHERE id=$1", "job-2")
     assert job_db["result"] == None
     assert job_db["priority"] == 2
     assert "KeyError" in job_db["reason"]
     assert "Traceback" in job_db["reason"]
+
+    log_db = await cnx.fetchval(
+        f"SELECT COUNT(*) FROM {queue_table}_error WHERE id=$1", "job-2"
+    )
+    assert log_db == 2
+
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.close()
 
@@ -117,7 +153,7 @@ async def test_job_failed_record_to_db():
 @pytest.mark.asyncio
 async def test_job_failed_exponential_delay_job_based_on_priority():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.execute(
@@ -127,7 +163,9 @@ async def test_job_failed_exponential_delay_job_based_on_priority():
             queue_table=queue_table
         )
     )
-    job = Job(cnx, queue_table, "job-2", "tests.test_job.raise_dummy_job", 0)
+    job = Job(
+        cnx, "public", "modngarn_job", "job-2", "tests.test_job.raise_dummy_job", 0
+    )
     # First failed, should delay 1 sec
     await job.execute()
     job_db = await cnx.fetchrow(f"SELECT * FROM {queue_table} WHERE id=$1", "job-2")
@@ -174,7 +212,7 @@ async def test_job_failed_exponential_delay_job_based_on_priority():
 @pytest.mark.asyncio
 async def test_job_failed_can_set_max_delay():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.execute(
@@ -185,7 +223,13 @@ async def test_job_failed_can_set_max_delay():
         )
     )
     job = Job(
-        cnx, queue_table, "job-2", "tests.test_job.raise_dummy_job", 0, max_delay=1.5
+        cnx,
+        "public",
+        "modngarn_job",
+        "job-2",
+        "tests.test_job.raise_dummy_job",
+        0,
+        max_delay=1.5,
     )
     # First failed, should delay 1 sec
     await job.execute()
@@ -220,7 +264,7 @@ async def test_job_failed_can_set_max_delay():
 @pytest.mark.asyncio
 async def test_job_runner_success_process():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.execute(
@@ -231,7 +275,7 @@ async def test_job_runner_success_process():
         )
     )
     job_runner = JobRunner()
-    await job_runner.run(queue_table, 1, None)
+    await job_runner.run("public", "modngarn_job", 1, None)
     job = await cnx.fetchrow(f"SELECT * FROM {queue_table} WHERE id=$1", "job-1")
     assert job["result"] == "hello"
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
@@ -241,7 +285,7 @@ async def test_job_runner_success_process():
 @pytest.mark.asyncio
 async def test_job_runner_can_define_limit():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f'TRUNCATE TABLE "modngarn_job";')
     await cnx.execute(
@@ -250,12 +294,12 @@ async def test_job_runner_can_define_limit():
             FROM generate_series(0, 100) s;"""
     )
     job_runner = JobRunner()
-    await job_runner.run("modngarn_job", 10, None)
+    await job_runner.run("public", "modngarn_job", 10, None)
     total_processed = await cnx.fetchval(
         f'SELECT COUNT(*) FROM "modngarn_job" WHERE executed IS NOT NULL'
     )
     assert total_processed == 10
-    await job_runner.run("modngarn_job", 10, None)
+    await job_runner.run("public", "modngarn_job", 10, None)
     total_processed = await cnx.fetchval(
         f'SELECT COUNT(*) FROM "modngarn_job" WHERE executed IS NOT NULL'
     )
@@ -267,7 +311,7 @@ async def test_job_runner_can_define_limit():
 @pytest.mark.asyncio
 async def test_job_notify_when_job_is_inserted():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     q = asyncio.Queue()
@@ -291,7 +335,7 @@ async def test_job_notify_when_job_is_inserted():
 @pytest.mark.asyncio
 async def test_job_runner_success_should_clear_error_msg():
     queue_table = "public.modngarn_job"
-    await create_table(queue_table)
+    await create_table("public", "modngarn_job")
     cnx = await get_connection()
     await cnx.execute(f"TRUNCATE TABLE {queue_table};")
     await cnx.execute(
@@ -302,7 +346,7 @@ async def test_job_runner_success_should_clear_error_msg():
         )
     )
     job_runner = JobRunner()
-    await job_runner.run(queue_table, 1, None)
+    await job_runner.run("public", "modngarn_job", 1, None)
     job = await cnx.fetchrow(f"SELECT * FROM {queue_table} WHERE id=$1", "job-1")
     assert job["result"] == "hello"
     assert job["reason"] is None
