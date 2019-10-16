@@ -230,3 +230,16 @@ async def delete_executed_job(
                 )
 
             return deleted
+
+
+async def is_pending_job_exists(queue_table_schema: str, queue_table_name: str) -> bool:
+    async with DBConnection() as cnx:
+        return await cnx.fetchval(
+            f"""
+                SELECT EXISTS(
+                    SELECT 1 FROM "{queue_table_schema}"."{queue_table_name}"
+                    WHERE executed IS NULL
+                    AND (scheduled IS NULL OR scheduled < NOW())
+                    AND canceled IS NULL
+                )
+            """)

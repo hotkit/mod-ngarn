@@ -74,12 +74,16 @@ def wait_for_notify(queue_table):
         utils.sql_table_name(queue_table).replace('"', "").split(".")
     )
     loop = asyncio.get_event_loop()
-    notification_queue = asyncio.Queue(loop=loop)
-    loop.create_task(
-        utils.wait_for_notify(queue_table_schema, queue_table_name, notification_queue)
-    )
-    loop.run_until_complete(utils.shutdown(notification_queue))
-    loop.run_forever()
+    is_pending_job_exists = loop.run_until_complete(
+        utils.is_pending_job_exists(queue_table_schema, queue_table_name))
+
+    if not is_pending_job_exists:
+        notification_queue = asyncio.Queue(loop=loop)
+        loop.create_task(
+            utils.wait_for_notify(queue_table_schema, queue_table_name, notification_queue)
+        )
+        loop.run_until_complete(utils.shutdown(notification_queue))
+        loop.run_forever()
 
 
 @click.command()

@@ -22,15 +22,14 @@ async def test_delete_executed_job_successfully():
     await cnx.execute(f"TRUNCATE TABLE {queue_table}_error")
 
     await insert_job(
-        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", None, "hello"
+        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", executed_time=None
     )
     await insert_job(
         cnx,
         queue_table,
         "job-2",
         "tests.utils.async_dummy_job",
-        datetime.utcnow().replace(tzinfo=timezone.utc),
-        "hello",
+        executed_time=datetime.utcnow().replace(tzinfo=timezone.utc)
     )
 
     result = await delete_executed_job("public", "modngarn_job")
@@ -52,15 +51,14 @@ async def test_delete_executed_job_with_keep_period():
     await cnx.execute(f"TRUNCATE TABLE {queue_table}_error")
 
     await insert_job(
-        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", None, "hello"
+        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", executed_time=None
     )
     await insert_job(
         cnx,
         queue_table,
         "job-2",
         "tests.utils.async_dummy_job",
-        datetime.utcnow().replace(tzinfo=timezone.utc),
-        "hello",
+        executed_time=datetime.utcnow().replace(tzinfo=timezone.utc)
     )
 
     await insert_job(
@@ -68,8 +66,7 @@ async def test_delete_executed_job_with_keep_period():
         queue_table,
         "job-3",
         "tests.utils.async_dummy_job",
-        datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=2),
-        "hello",
+        executed_time=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=2)
     )
 
     result = await delete_executed_job("public", "modngarn_job", keep_period_day=1)
@@ -92,15 +89,14 @@ async def test_delete_executed_job_with_batch_size_lower_than_executed_job():
     await cnx.execute(f"TRUNCATE TABLE {queue_table}_error")
 
     await insert_job(
-        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", None, "hello"
+        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", executed_time=None
     )
     await insert_job(
         cnx,
         queue_table,
         "job-2",
         "tests.utils.async_dummy_job",
-        datetime.utcnow().replace(tzinfo=timezone.utc),
-        "hello",
+        executed_time=datetime.utcnow().replace(tzinfo=timezone.utc)
     )
 
     await insert_job(
@@ -108,8 +104,7 @@ async def test_delete_executed_job_with_batch_size_lower_than_executed_job():
         queue_table,
         "job-3",
         "tests.utils.async_dummy_job",
-        datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=2),
-        "hello",
+        executed_time=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=2)
     )
 
     result = await delete_executed_job("public", "modngarn_job", batch_size=1)
@@ -134,15 +129,14 @@ async def test_delete_executed_job_with_repeat_true():
     await cnx.execute(f"TRUNCATE TABLE {queue_table}_error")
 
     await insert_job(
-        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", None, "hello"
+        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", executed_time=None
     )
     await insert_job(
         cnx,
         queue_table,
         "job-2",
         "tests.utils.async_dummy_job",
-        datetime.utcnow().replace(tzinfo=timezone.utc),
-        "hello",
+        executed_time=datetime.utcnow().replace(tzinfo=timezone.utc)
     )
 
     await insert_job(
@@ -150,8 +144,7 @@ async def test_delete_executed_job_with_repeat_true():
         queue_table,
         "job-3",
         "tests.utils.async_dummy_job",
-        datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=2),
-        "hello",
+        executed_time=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=2)
     )
 
     result = await delete_executed_job(
@@ -179,15 +172,14 @@ async def test_delete_executed_job_with_repeat_true_and_batch():
     await cnx.execute(f"TRUNCATE TABLE {queue_table}_error")
 
     await insert_job(
-        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", None, "hello"
+        cnx, queue_table, "job-1", "tests.utils.async_dummy_job", executed_time=None
     )
     await insert_job(
         cnx,
         queue_table,
         "job-2",
         "tests.utils.async_dummy_job",
-        datetime.utcnow().replace(tzinfo=timezone.utc),
-        "hello",
+        executed_time=datetime.utcnow().replace(tzinfo=timezone.utc)
     )
 
     await insert_job(
@@ -195,8 +187,7 @@ async def test_delete_executed_job_with_repeat_true_and_batch():
         queue_table,
         "job-3",
         "tests.utils.async_dummy_job",
-        datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=2),
-        "hello",
+        executed_time=datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=2)
     )
 
     result = await delete_executed_job(

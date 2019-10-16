@@ -16,13 +16,14 @@ async def insert_job(
     id: str,
     function_name: str,
     executed_time: datetime = None,
-    *args,
-    **kwargs
+    scheduled: datetime = None,
+    args: list = [],
+    kwargs: dict = {}
 ) -> str:
     return await connection.execute(
         """
-        INSERT INTO {queue_table} (id, fn_name, args, kwargs, executed) 
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO {queue_table} (id, fn_name, args, kwargs, executed, scheduled)
+        VALUES ($1, $2, $3, $4, $5, $6)
         """.format(
             queue_table=table_name
         ),
@@ -31,4 +32,5 @@ async def insert_job(
         args,
         kwargs,
         executed_time,
+        scheduled,
     )
