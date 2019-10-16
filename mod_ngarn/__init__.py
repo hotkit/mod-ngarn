@@ -76,10 +76,8 @@ def wait_for_notify(queue_table):
     loop = asyncio.get_event_loop()
     is_pending_job_exists = loop.run_until_complete(
         utils.is_pending_job_exists(queue_table_schema, queue_table_name))
-    loop.close()
 
     if not is_pending_job_exists:
-        loop = asyncio.get_event_loop()
         notification_queue = asyncio.Queue(loop=loop)
         loop.create_task(
             utils.wait_for_notify(queue_table_schema, queue_table_name, notification_queue)
