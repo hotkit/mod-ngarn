@@ -159,3 +159,12 @@ class JobRunner:
                 else:
                     break
         await cnx.close()
+
+    async def run_listen(
+        self, queue_table_schema: str, queue_table_name: str, limit: int, max_delay: int, q: asyncio.Queue
+    ):
+        while True:
+            log.info(f"Waiting for job...")
+            item = await q.get()
+            log.info(f"Running... {item}")
+            await self.run(queue_table_schema, queue_table_name, limit, max_delay)

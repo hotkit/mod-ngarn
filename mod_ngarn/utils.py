@@ -147,6 +147,17 @@ async def wait_for_notify(
     cnx = await get_connection()
     await cnx.add_listener(f"{queue_table_schema}_{queue_table_name}", notified)
 
+async def wait_for_notify_longterm(
+    queue_table_schema: str, queue_table_name: str, q: asyncio.Queue
+):
+    """ Wait for notification and put channel to the Queue """
+
+    def notified(cnx: Connection, pid: int, channel: str, payload: str):
+        asyncio.gather(q.put(channel))
+
+    cnx = await get_connection()
+    await cnx.add_listener(f"{queue_table_schema}_{queue_table_name}", notified)
+
 
 async def shutdown(q: asyncio.Queue):
     """ Gracefully shutdown when something put to the Queue """
@@ -243,3 +254,10 @@ async def is_pending_job_exists(queue_table_schema: str, queue_table_name: str) 
                     AND canceled IS NULL
                 )
             """)
+
+async def pending_job_poller(queue_table_schema: str, queue_table_name: str, q: asyncio.Queue):
+    while True:
+        if await is_pending_job_exists(queue_table_schema, queue_table_name):
+            await q.put(pending_job_poller)
+        await asyncio.sleep(5) #TODO: Config this
+        #Maybe write watchdog here?
