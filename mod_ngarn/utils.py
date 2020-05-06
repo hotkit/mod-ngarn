@@ -258,6 +258,6 @@ async def is_pending_job_exists(queue_table_schema: str, queue_table_name: str) 
 async def pending_job_poller(queue_table_schema: str, queue_table_name: str, q: asyncio.Queue):
     while True:
         if await is_pending_job_exists(queue_table_schema, queue_table_name):
-            await q.put(pending_job_poller)
+            await q.put("pending_job_poller")
         await asyncio.sleep(5) #TODO: Config this
         #Maybe write watchdog here?
